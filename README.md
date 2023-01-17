@@ -1,7 +1,7 @@
 # SSTRANGE: Scalable Similarity TRacker in Academia with Natural lanGuage Explanation
 **SSTRANGE** \(Scalable Similarity TRacker in Academia with Natural lanGuage Explanation\) is a scalable and efficient tool to observe similarities among submissions with locality sensitive hashing: MinHash and Super-Bit. Currently, the tool supports Java and Python submissions. Further details can be seen in [the corresponding paper](https://www.mdpi.com/2227-7102/13/1/54) published in MDPI's Education Sciences as part of special issue "Application of New Technologies for Assessment in Higher Education".
 
-Unlike its counterpart, [Comprehensive STRANGE](https://github.com/oscarkarnalim/CSTRANGE), SSTRANGE focuses on efficiency and it is suitable for large submissions. For comprehensive reporting, it is recommended to use [Comprehensive STRANGE or CSTRANGE](https://github.com/oscarkarnalim/CSTRANGE) instead.
+Unlike its counterpart, [Comprehensive STRANGE](https://github.com/oscarkarnalim/CSTRANGE), SSTRANGE focuses on efficiency and it is suitable for large submissions. SSTRANGE can also be executed via command line interface (see the instructions below). For comprehensive reporting, it is recommended to use [Comprehensive STRANGE or CSTRANGE](https://github.com/oscarkarnalim/CSTRANGE) instead.
 
 SSTRANGE and CSTRANGE has comparable features: graphical user interface, template code removal, and common code removal. 
 
@@ -21,7 +21,7 @@ SSTRANGE and CSTRANGE has comparable features: graphical user interface, templat
 <img width="80%" src="https://github.com/oscarkarnalim/SSTRANGE/blob/main/UI_03.png?raw=true">
 </p>
 
-## Input 
+## Input parameters
 ### Assessment path
 This refers to a directory containing student submissions as submission files, sub-directories or zip files.
 
@@ -53,6 +53,25 @@ If this feature is turned on, the tool will try to remove all similar contents t
 
 ### Similarity measurement
 How similarities will be detected. The options are MinHash, Super-Bit, Jaccard, Cosine, and RKRGST (running Karp-Rabin greedy string tiling). MinHash and Super-Bit are the most time efficient while RKRGST is the slowest.
+
+## Command line usage
+```
+<assessment path> <submission type> <submission language> <explanation language> <minimum similarity threshold> <maximum reported submission pairs> <minimum matching length> <template directory path> <common content> <similarity measurement> <resourxe path> <number of clusters> <number of stages>
+```
+
+<assessment path>: absolute directory path (String) 
+<submission type>: "file", "dir", or "zip" 
+<submission language>: "java" or "py" 
+<explanation language>: "en" or "id" 
+<minimum similarity threshold>: non-negative integer 0-100 
+<maximum reported submission pairs>: positive integer 
+<minimum matching length>: positive integer no less than 2 
+<template directory path>: absolute directory path (String) 
+<common content>: "true" or "false" 
+<similarity measurement>: "minhash", "super-bit", "jaccard", "cosine", or "rkrgst"  
+<resourxe path>: absolute directory path to SSTRANGE resource dir (String) 
+<number of clusters>: positive integer no less than 2 (only used for minhash and super-bit) 
+<number of stages>: positive integer (only used for minhash and super-bit) 
 
 ## Acknowledgments
 This tool uses [STRANGE](https://github.com/oscarkarnalim/strange) as the basis of development, [CSTRANGE](https://github.com/oscarkarnalim/strange) to develop user interface, [ANTLR](https://www.antlr.org/) to tokenise given submissions, [tdebatty's module](https://github.com/tdebatty/java-LSH) to do locality sensitive hashing, and [Google Prettify](https://github.com/google/code-prettify) to display source code.
