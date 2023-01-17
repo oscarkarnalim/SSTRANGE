@@ -72,7 +72,6 @@ How similarities will be detected. The options are MinHash, Super-Bit, Jaccard, 
 <resourxe path>: absolute directory path to SSTRANGE resource dir (String) 
 <number of clusters>: positive integer no less than 2 (only used for minhash and super-bit) 
 <number of stages>: positive integer (only used for minhash and super-bit) 
-
 ```
 
 ## Acknowledgments
@@ -81,7 +80,7 @@ This tool uses [STRANGE](https://github.com/oscarkarnalim/strange) as the basis 
 # Indonesian Guideline for SSTRANGE
 **SSTRANGE** \(Scalable Similarity TRacker in Academia with Natural lanGuage Explanation\) adalah kakas yang skalabel dan efisien untuk mengobservasi kesamaan tugas program siswa dengan locality sensitive hashing: MinHash and Super-Bit. Saat ini, kakas hanya mendukung bahasa pemrograman Java dan Python. Detil lebih jauh dapat dilihat di [artikel terkait](https://www.mdpi.com/2227-7102/13/1/54) yang dipublikasikan di MDPI's Education Sciences sebagai bagian dari edisi khusus "Application of New Technologies for Assessment in Higher Education".
 
-Tidak seperti padanannya, [Comprehensive STRANGE](https://github.com/oscarkarnalim/CSTRANGE), SSTRANGE terfokus pada efisiensi dan cocok digunakan untuk tugas-tugas berukuran besar. Untuk pelaporan kesamaan yang kopmrehensif, anda direkomendasikan untuk menggunakan [Comprehensive STRANGE or CSTRANGE](https://github.com/oscarkarnalim/CSTRANGE).
+Tidak seperti padanannya, [Comprehensive STRANGE](https://github.com/oscarkarnalim/CSTRANGE), SSTRANGE terfokus pada efisiensi dan cocok digunakan untuk tugas-tugas berukuran besar. SSTRANGE juga dapat dijalankan melalui command line interface (lihat instruksinya dibawah). Untuk pelaporan kesamaan yang kopmrehensif, anda direkomendasikan untuk menggunakan [Comprehensive STRANGE or CSTRANGE](https://github.com/oscarkarnalim/CSTRANGE).
 
 SSTRANGE dan CSTRANGE memiliki fitur yang komparabel: tampilan antarmuka, penghapusan kode template, dan penghapusan kode umum. 
 
@@ -117,3 +116,23 @@ Jika fitur ini diaktifkan, kakas akan mencoba untuk membuang semua konten sama y
 
 ### Similarity measurement (pengukuran kesamaan)
 Bagaimana kesamaan kode dapat dideteksi. Pilihannya antara lain MinHash, Super-Bit, Jaccard, Cosine, dan RKRGST (running Karp-Rabin greedy string tiling). MinHash dan Super-Bit merupakan dua algoritma yang paling efisien sedangkan RKRGST adalah yang terlambat.
+
+## Penggunaan dengan command line
+```
+<assessment path> <submission type> <submission language> <explanation language> <minimum similarity threshold> <maximum reported submission pairs> <minimum matching length> <template directory path> <common content> <similarity measurement> <resourxe path> <number of clusters> <number of stages>
+
+
+<assessment path>: path direktori absolut (String) 
+<submission type>: "file", "dir", atau "zip" 
+<submission language>: "java" atau "py" 
+<explanation language>: "en" atau "id" 
+<minimum similarity threshold>: bilangan bulat tidak negatif 0-100 
+<maximum reported submission pairs>: bilangan bulat positif
+<minimum matching length>: bilangan bulat positif tidak kurang dari 2
+<template directory path>: path direktori absolut (String) 
+<common content>: "true" atau "false" 
+<similarity measurement>: "minhash", "super-bit", "jaccard", "cosine", atau "rkrgst"  
+<resourxe path>: path direktori absolut ke direktori resource SSTRANGE (String) 
+<number of clusters>: bilangan bulat positif tidak kurang dari 2 (hanya untuk minhash dan super-bit)
+<number of stages>: bilangan bulat positif (hanya untuk minhash dan super-bit)
+```
