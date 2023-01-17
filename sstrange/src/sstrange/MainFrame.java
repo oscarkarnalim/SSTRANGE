@@ -52,45 +52,10 @@ public class MainFrame extends JFrame {
 	/**
 	 * Launch the application.
 	 */
-	public static void main(String[] args) {
-//		args = new String[] {"C:\\Users\\oscar\\Desktop\\06_LAB_PYTHON", "zip", "py", "id", "40", "10", "10", "none", "true", "minhash", "C:\\Users\\oscar\\eclipse-workspace\\sstrange", "2", "1"};
-//		
+	public static void main(String[] args) {	
 		// if args has arguments, execute as a library
 		if (args.length > 0) {
 			executeConsole(args);
-			
-//			String assignmentPath = args[0];
-//			String submissionType = args[1];
-//			String progLang = args[2];
-//			String humanLang = args[3];
-//			int simThreshold = Integer.parseInt(args[4]);
-//			int minMatchingLength = Integer.parseInt(args[5]);
-//			int maxPairs = Integer.parseInt(args[6]);
-//
-//			String templateDirPath = args[7];
-//			if (templateDirPath == null)
-//				templateDirPath = "";
-//
-//			String similarityMeasurementType = args[8];
-//			boolean isCommonCodeAllowed = Boolean.parseBoolean(args[9]);
-//
-//			pairTemplatePath = args[10] + File.separator + pairTemplatePath;
-//			indexTemplatePath = args[10] + File.separator + indexTemplatePath;
-//			additional_dir_path = args[10] + File.separator + additional_dir_path;
-//			javaAdditionalKeywords = args[10] + File.separator + javaAdditionalKeywords;
-//			pyAdditionalKeywords = args[10] + File.separator + pyAdditionalKeywords;
-//
-//			int numClusters = 2;
-//			int numStages = 1;
-//
-//			if (similarityMeasurementType.equals("MinHash") || similarityMeasurementType.equals("Super-Bit")) {
-//				numClusters = Integer.parseInt(args[11]);
-//				numStages = Integer.parseInt(args[12]);
-//			}
-//
-//			process(assignmentPath, submissionType, progLang, humanLang, simThreshold, maxPairs, minMatchingLength,
-//					templateDirPath, isCommonCodeAllowed, similarityMeasurementType, numClusters, numStages);
-
 		} else {
 			// if empty, show the UI
 			EventQueue.invokeLater(new Runnable() {
