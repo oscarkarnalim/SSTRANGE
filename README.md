@@ -8,17 +8,17 @@ SSTRANGE and CSTRANGE has comparable features: graphical user interface, templat
 ## User Interface
 ### Main layout
 <p align="center">
-<img width="40%" src="https://www.mdpi.com/education/education-13-00054/article_deploy/html/images/education-13-00054-g002-550.jpg">
+<img width="40%" src="https://github.com/oscarkarnalim/SSTRANGE/blob/main/UI_01.png?raw=true">
 </p>
 
 ### Navigation layout
 <p align="center">
-<img width="80%" src="https://www.mdpi.com/education/education-13-00054/article_deploy/html/images/education-13-00054-g003-550.jpg">
+<img width="80%" src="https://github.com/oscarkarnalim/SSTRANGE/blob/main/UI_02.png?raw=true">
 </p>
 
 ### Pairwise similarity report
 <p align="center">
-<img width="80%" src="https://www.mdpi.com/education/education-13-00054/article_deploy/html/images/education-13-00054-g004-550.jpg">
+<img width="80%" src="https://github.com/oscarkarnalim/SSTRANGE/blob/main/UI_03.png?raw=true">
 </p>
 
 ## Input 
@@ -56,3 +56,43 @@ How similarities will be detected. The options are MinHash, Super-Bit, Jaccard, 
 
 ## Acknowledgments
 This tool uses [STRANGE](https://github.com/oscarkarnalim/strange) as the basis of development, [CSTRANGE](https://github.com/oscarkarnalim/strange) to develop user interface, [ANTLR](https://www.antlr.org/) to tokenise given submissions, [tdebatty's module](https://github.com/tdebatty/java-LSH) to do locality sensitive hashing, and [Google Prettify](https://github.com/google/code-prettify) to display source code.
+
+# Indonesian Guideline for SSTRANGE
+**SSTRANGE** \(Scalable Similarity TRacker in Academia with Natural lanGuage Explanation\) adalah kakas yang skalabel dan efisien untuk mengobservasi kesamaan tugas program siswa dengan locality sensitive hashing: MinHash and Super-Bit. Saat ini, kakas hanya mendukung bahasa pemrograman Java dan Python. Detil lebih jauh dapat dilihat di [artikel terkait](https://www.mdpi.com/2227-7102/13/1/54) yang dipublikasikan di MDPI's Education Sciences sebagai bagian dari edisi khusus "Application of New Technologies for Assessment in Higher Education".
+
+Tidak seperti padanannya, [Comprehensive STRANGE](https://github.com/oscarkarnalim/CSTRANGE), SSTRANGE terfokus pada efisiensi dan cocok digunakan untuk tugas-tugas berukuran besar. Untuk pelaporan kesamaan yang kopmrehensif, anda direkomendasikan untuk menggunakan [Comprehensive STRANGE or CSTRANGE](https://github.com/oscarkarnalim/CSTRANGE).
+
+SSTRANGE dan CSTRANGE memiliki fitur yang komparabel: tampilan antarmuka, penghapusan kode template, dan penghapusan kode umum. 
+
+## Masukan 
+### Assessment path (lokasi tugas)
+Ini mengarah pada sebuah direktori berisi kumpulan hasil pekerjaan dalam bentuk kumpulan file, sub-direktori, atau zip.
+
+### Submission type (jenis hasil pekerjaan yang dikumpulkan)
+Single file: setiap tugas siswa direpresentasikan dengan sebuah file atau sebuah sub-direktori berisi satu file hasil pekerjaan.  
+Multiple files in a directory: setiap tugas siswa direpresentasikan dengan sub-direktori berisi beberapa file. Semua file tersebut akan dikonkatenasi sebelum dibandingkan satu sama lain.  
+Multiple files in a zip: setiap tugas siswa direpresentasikan dengan sebuah file zip. File tersebut akan diekstrak dan semua file didalamnya akan dikonkatenasi sebelum dibandingkan satu sama lain.
+
+### Submission language (bahasa hasil pekerjaan)
+Bahasa pemrograman dari hasil pekerjaan yang dikumpulkan. 
+
+### Explanation language (bahasa penjelasan)
+Bahasa manusia dari penjelasan kesamaan. Pilihan yang ada adalah Inggris dan Indonesia.  
+
+### Minimum similarity threshold (batas kesamaan minimum)
+Persentasi minimum dari kesamaan hasil pekerjaan agar dilaporkan. Nilainya diantara 0 hingga 100 secara inklusif. 
+
+### Maximum reported submission pairs (batas maksimum pasangan tugas yang dilaporkan)
+Jumlah maksimum dari pasangan hasil pekerjaan dengan kesamaan tinggi yang dilaporkan. Nilai besar akan menampilkan lebih banyak pasangan tugas untuk cek manual tapi akan membuat eksekusi menjadi lebih lambat.
+
+### Minimum matching length (panjang kesamaan minimum)
+Ini menentukan seberapa banyak token ('kata') yang dibutuhkan agar sebuah bagian konten dilaporkan. Nilai yang lebih besar akan mengurangi kemunculan kesamaan tidak disengaja, namun akan membuat kakas semakin rentan dengan penyamaran.
+
+### Template directory path (lokasi direktori template)
+Ini mengarah pada lokasi direktori berisi konten template yang disimpan dalam file-file. Kakas akan mencoba untuk membuang semua konten template dari tugas-tugas siswa sebelum dibandingkan satu sama lain.
+
+### Common content (pertimbangan kode umum)
+Jika fitur ini diaktifkan, kakas akan mencoba untuk membuang semua konten sama yang umum ditemukan di hasil pekerjaan siswa. Ini mungkin akan menyebabkan waktu proses yang lebih lama.
+
+### Similarity measurement (pengukuran kesamaan)
+Bagaimana kesamaan kode dapat dideteksi. Pilihannya antara lain MinHash, Super-Bit, Jaccard, Cosine, dan RKRGST (running Karp-Rabin greedy string tiling). MinHash dan Super-Bit merupakan dua algoritma yang paling efisien sedangkan RKRGST adalah yang terlambat.
