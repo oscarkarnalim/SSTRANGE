@@ -34,14 +34,13 @@ public class MatchGenerator {
 		}
 
 		// merge overlapping matches
-		// BELOMMM
-		// empat kondisi:
+		// conditions:
 		// 1. AABB -> automatically handled by STRANGE
 		// 2. AA
-		// BB
+		//     BB
 		// 3. Reverse of 1 -> automatically handled by STRANGE
 		// 4. Reverse of 2
-		// Other than these cases, nullify the shortest. Cek juga khusus di kode kedua
+		// Other than these cases, nullify the shortest.
 		for (int i = 0; i < matches.size(); i++) {
 			GSTMatchTuple m = matches.get(i);
 			int mtstart = m.textPosition;
@@ -55,11 +54,11 @@ public class MatchGenerator {
 				int npstart = n.patternPosition;
 				int npfinish = n.patternPosition + n.length;
 
-				if (mtstart <= ntstart && ntstart < mtfinish) {
+				if (mtstart <= ntstart && ntstart <= mtfinish) {
 					// Case 1: N starts in between M for text
 
-					if (mpstart <= npstart && npstart < mpfinish) {
-						// if that also happens on pattern
+					if (mpstart <= npstart && npstart <= mpfinish && ntstart-mtstart == npstart - mtstart) {
+						// if that also happens on pattern with relative position of n toward m is the same
 						
 						// calculate new start and finish
 						int otstart = mtstart;
@@ -78,7 +77,7 @@ public class MatchGenerator {
 					}else {
 						// overlap in text but not in pattern
 						
-						// swap N attributes with M if M is longer
+						// set N attributes with M if M is longer
 						if(n.length < m.length) {
 							n.textPosition = m.textPosition;
 							n.patternPosition = m.patternPosition;
@@ -93,11 +92,11 @@ public class MatchGenerator {
 					
 					// get out from j loop
 					break;
-				}else if (ntstart <= mtstart && mtstart < ntfinish) {
+				}else if (ntstart <= mtstart && mtstart <= ntfinish) {
 					// Case 2: M starts in between M for text
 					
-					if (npstart <= mpstart && mpstart < npfinish) {
-						// if that also happens on pattern
+					if (npstart <= mpstart && mpstart <= npfinish && ntstart-mtstart == npstart - mtstart) {
+						// if that also happens on pattern with relative position of n toward m is the same
 						
 						// calculate new start and finish
 						int otstart = ntstart;
@@ -116,7 +115,7 @@ public class MatchGenerator {
 					}else {
 						// overlap in text but not in pattern
 						
-						// swap N attributes with M if M is longer
+						// set N attributes with M if M is longer
 						if(n.length < m.length) {
 							n.textPosition = m.textPosition;
 							n.patternPosition = m.patternPosition;
@@ -131,10 +130,10 @@ public class MatchGenerator {
 					
 					// get out from j loop
 					break;
-				}else if((mpstart <= npstart && npstart < mpfinish) || (npstart <= mpstart && mpstart < npfinish)) {
+				}else if((mpstart <= npstart && npstart <= mpfinish) || (npstart <= mpstart && mpstart <= npfinish)) {
 					// overlap in pattern but not in text
 					
-					// swap N attributes with M if M is longer
+					// set N attributes with M if M is longer
 					if(n.length < m.length) {
 						n.textPosition = m.textPosition;
 						n.patternPosition = m.patternPosition;

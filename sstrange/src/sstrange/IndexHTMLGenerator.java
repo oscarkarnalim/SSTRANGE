@@ -137,7 +137,7 @@ public class IndexHTMLGenerator {
 			s += "<tr id=\"" + entryID + "\" onclick=\"selectRow('" + entryID + "','sumtablecontent')\">";
 			s += ("\n\t<td><a>" + ct.getAssignmentName1() + "-" + ct.getAssignmentName2() + "</a></td>");
 			s += ("\n\t<td>" + String.format("%.0f", ct.getSimResult()) + " %</td>");
-			s += ("\n\t<td>" + ct.getClusterID() + "</td>");
+			s += ("\n\t<td>" + ct.getSameClusterOccurrences() + "</td>");
 
 			s += ("\n\t<td><button onclick=\"window.open('" + ct.getResultedHTMLFilename() + "', '_self');\">"
 					+ textForObserve + "</button></td>");

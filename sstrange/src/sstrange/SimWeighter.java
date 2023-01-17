@@ -3,8 +3,8 @@ package sstrange;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import p3.feedbackgenerator.token.FeedbackToken;
 import sstrange.matchgenerator.MatchGenerator;
+import sstrange.token.FeedbackToken;
 import support.stringmatching.GSTMatchTuple;
 
 public class SimWeighter {

@@ -35,18 +35,13 @@
 				isFocusKept = true;
 				if(selectedCodeFragmentId == null){ // if no selected fragment, nothing to be kept
 					isFocusKept = false;
-				}else if(selectedCodeFragmentId[0] == 'c' &&
-				 (tabName == "syntaxonly" || tabName == "partialrenaming")){
-					 // if the selected one is comment and the target tab is syon or rena
-					 isFocusKept = false;
-				 }
+				}
 
 				// if the selected fragment needs to be kept
 				if(isFocusKept){
 					// get the number
 					numId = '';
-					if(selectedCodeFragmentId.includes('nows') || selectedCodeFragmentId.includes('syon') ||
-						selectedCodeFragmentId.includes('rena')){
+					if(selectedCodeFragmentId.includes('syon')){
 						numId = selectedCodeFragmentId.substring(5,selectedCodeFragmentId.length);
 					}else{
 						numId = selectedCodeFragmentId.substring(1,selectedCodeFragmentId.length);
@@ -54,12 +49,8 @@
 
 					// get the mode
 					mode = '';
-					if(tabName == "formatwhitespace"){
-						mode = 'nows';
-					}else if(tabName == "syntaxonly"){
+					if(tabName == "syntaxonly"){
 						mode = 'syon';
-					}else if(tabName == "partialrenaming"){
-						mode = 'rena';
 					}
 					// get the new ID
 					newId = selectedCodeFragmentId[0] + mode + numId;
@@ -83,10 +74,8 @@
 				}
 				// set the CSS of currently selected fragment
 				var defaultColour = "";
-				if(id.startsWith("c")){
-					defaultColour = "rgba(244,224,104,1)";
-				}else if(id.startsWith("s")){
-					defaultColour = "rgba(101,244,104,1)";
+				if(id.startsWith("s")){
+					defaultColour = "rgba(244,161,164,1)";
 				}
 				// for left panel
 				recolorCodeFragment(id + "a",defaultColour);
@@ -124,12 +113,8 @@
 
 
 				// reset the CSS of previously selected fragment
-				var defaultColour = "";
-				if(selectedCodeFragmentId.startsWith("c")){
-					defaultColour = "rgba(244,224,174,1)";
-				}else if(selectedCodeFragmentId.startsWith("s")){
-					defaultColour = "rgba(171,244,174,1)";
-				}
+				var defaultColour = "rgba(244,211,214,1)";
+
 
 				// for natural language explanation
 				document.getElementById(selectedCodeFragmentId +"he").style.display = "none";
@@ -310,7 +295,7 @@
 			div.codeview{
 				float:left;
 				width: 49%;
-				height:61%;
+				height:68%;
 				margin-right: 1%;
 			}
 			pre{
@@ -320,11 +305,8 @@
 				height:100%;
 				float:left;
 			}
-			.commentsim{
-				background-color:rgba(244,224,174,1);
-			}
 			.syntaxsim{
-				background-color:rgba(171,244,174,1);
+				background-color:rgba(244,211,214,1);
 			}
 			/* copied from https://stackoverflow.com/questions/8399547/how-to-add-line-numbers-to-all-lines-in-google-prettify
 			 to make each line numbered */
@@ -547,7 +529,7 @@
 				float:left;
 				font-size:20px;
 				font-weight:bold;
-				margin-bottom:10px;
+				margin-top:15px;
 			}
 
 		</style>
@@ -558,14 +540,13 @@
 				<div class="embedimage">
 					<img class="embedimage" src="strange_html_layout_additional_files/logo.png" alt="logo STRANGE">
 				</div>
-	
+				<div class="header"> Comparison of @codepath1 and @codepath2</div>
 			</div>
 			<hr />
-			<div class="header"> Comparison of @codepath1 and @codepath2 from cluster @cluster </div>
+
 			<div class="tab">
 			  <button id="origbutton" class="tablinks" onclick="openTab(event, 'orig', 'origtablecontent')">Raw</button>
 			  <button class="tablinks" onclick="openTab(event, 'syntaxonly', 'syontablecontent')">Syntax only</button>
-			  <button class="tablinks" onclick="openTab(event, 'partialrenaming', 'renatablecontent')">Content generalisation</button>
 			  <button class="tablinks" onclick="window.open('index.html', '_self');">Back</button>
 			</div>
 		</div>
@@ -577,10 +558,10 @@
 					<table class="header">
 						<tr>
 							<th onclick="sortTable(0,'origtablecontent',false, 'origcontainer')" >ID <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(1,'origtablecontent',false, 'origcontainer')">Type <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(2,'origtablecontent',true, 'origcontainer')">Min length <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(3,'origtablecontent',true, 'origcontainer')">Matched tokens <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(4,'origtablecontent',true, 'origcontainer')">Concern priority <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(1,'origtablecontent',true, 'origcontainer')">Left code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(2,'origtablecontent',true, 'origcontainer')">Right code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(3,'origtablecontent',true, 'origcontainer')">Min length <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(4,'origtablecontent',true, 'origcontainer')">Matched tokens <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
 						</tr>
 					</table>
 				</div>
@@ -605,42 +586,6 @@
 			</div>
 		</div>
 
-		<div id="formatwhitespace" class="tabcontent">
-			<span class="infotitle"> Similarity information: </span>
-			<span class="infotitle"> Explanation: </span>
-			<div class="tablecontainer">
-				<div class="tableheader">
-					<table class="header">
-						<tr>
-							<th onclick="sortTable(0,'nowstablecontent',false, 'nowscontainer')" >ID <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(1,'nowstablecontent',false, 'nowscontainer')">Type <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(2,'nowstablecontent',true, 'nowscontainer')">Min length <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(3,'nowstablecontent',true, 'nowscontainer')">Matched tokens <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(4,'nowstablecontent',true, 'nowscontainer')">Concern priority <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-						</tr>
-					</table>
-				</div>
-				<div class="tablecontentcontainer" id="nowscontainer">
-					<table id="nowstablecontent">
-@nowstablecontent
-					</table>
-				</div>
-			</div>
-			<div class="explanation">
-@nowsexplanation
-			</div>
-			<div class="codeview">
-				<pre class="prettyprint linenums">
-@nowscode1
-				</pre>
-			</div>
-			<div class="codeview">
-				<pre class="prettyprint linenums">
-@nowscode2
-				</pre>
-			</div>
-		</div>
-
 		<div id="syntaxonly" class="tabcontent">
 			<span class="infotitle"> Similarity information: </span>
 			<span class="infotitle"> Explanation: </span>
@@ -649,10 +594,10 @@
 					<table class="header">
 						<tr>
 							<th onclick="sortTable(0,'syontablecontent',false, 'syoncontainer')" >ID <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(1,'syontablecontent',false, 'syoncontainer')">Type <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(2,'syontablecontent',true, 'syoncontainer')">Min length <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(3,'syontablecontent',true, 'syoncontainer')">Matched tokens <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(4,'syontablecontent',true, 'syoncontainer')">Concern priority <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(1,'syontablecontent',true, 'syoncontainer')">Left code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(2,'syontablecontent',true, 'syoncontainer')">Right code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(3,'syontablecontent',true, 'syoncontainer')">Min length <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(4,'syontablecontent',true, 'syoncontainer')">Matched tokens <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
 						</tr>
 					</table>
 				</div>
@@ -673,42 +618,6 @@
 			<div class="codeview">
 				<pre class="prettyprint linenums">
 @syoncode2
-				</pre>
-			</div>
-		</div>
-
-		<div id="partialrenaming" class="tabcontent">
-			<span class="infotitle"> Similarity information: </span>
-			<span class="infotitle"> Explanation: </span>
-			<div class="tablecontainer">
-				<div class="tableheader">
-					<table class="header">
-						<tr>
-							<th onclick="sortTable(0,'renatablecontent',false, 'renacontainer')" >ID <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(1,'renatablecontent',false, 'renacontainer')">Type <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(2,'renatablecontent',true, 'renacontainer')">Min length <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(3,'renatablecontent',true, 'renacontainer')">Matched tokens <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(4,'renatablecontent',true, 'renacontainer')">Concern priority <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-						</tr>
-					</table>
-				</div>
-				<div class="tablecontentcontainer" id="renacontainer">
-					<table id="renatablecontent">
-@renatablecontent
-					</table>
-				</div>
-			</div>
-			<div class="explanation">
-@renaexplanation
-			</div>
-			<div class="codeview">
-				<pre class="prettyprint linenums">
-@renacode1
-				</pre>
-			</div>
-			<div class="codeview">
-				<pre class="prettyprint linenums">
-@renacode2
 				</pre>
 			</div>
 		</div>

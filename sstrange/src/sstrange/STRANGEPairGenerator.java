@@ -4,11 +4,11 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
 
-import p3.feedbackgenerator.language.java.JavaFeedbackGenerator;
-import p3.feedbackgenerator.language.python.PythonFeedbackGenerator;
-import p3.feedbackgenerator.message.FeedbackMessageGenerator;
-import p3.feedbackgenerator.token.FeedbackToken;
+import sstrange.language.java.JavaFeedbackGenerator;
+import sstrange.language.python.PythonFeedbackGenerator;
 import sstrange.matchgenerator.MatchGenerator;
+import sstrange.message.FeedbackMessageGenerator;
+import sstrange.token.FeedbackToken;
 import support.stringmatching.GSTMatchTuple;
 
 public class STRANGEPairGenerator {
@@ -28,33 +28,6 @@ public class STRANGEPairGenerator {
 			return PythonFeedbackGenerator.generateSyntaxTokenString(filepath);
 		} else
 			return null;
-	}
-
-	public static int getSTRANGESim(ArrayList<FeedbackToken> tokenString1, ArrayList<FeedbackToken> tokenString2,
-			int minimumMatchLength) {
-		return getSTRANGESim(tokenString1, tokenString2, minimumMatchLength,false,false);
-	}
-
-	public static int getSTRANGESim(ArrayList<FeedbackToken> tokenString1, ArrayList<FeedbackToken> tokenString2,
-			int minimumMatchLength, boolean isIDFWeighted, boolean isLengthWeighted) {
-
-		// get matched tiles with RKRGST
-		ArrayList<GSTMatchTuple> simTuples = FeedbackMessageGenerator.generateMatchedTuples(tokenString1, tokenString2,
-				minimumMatchLength);
-
-		// calculate similarity based on weight
-		double sim = 0;
-		if (isIDFWeighted && isLengthWeighted)
-			sim = SimWeighter.calcIDFLengthWeightedSim(simTuples, tokenString1, tokenString2);
-		else if (isIDFWeighted)
-			sim = SimWeighter.calcIDFWeightedSim(simTuples, tokenString1, tokenString2);
-		else if (isLengthWeighted)
-			sim = SimWeighter.calcLengthWeightedSim(simTuples, tokenString1, tokenString2);
-		else
-			sim = MatchGenerator.calcAverageSimilarity(simTuples, tokenString1.size(), tokenString2.size());
-		
-		return (int) (sim * 100); // times 100 just to make the percentage comparable with that of JPlag
-
 	}
 
 	public static void generateAdditionalDir(String targetDirPath) throws Exception {

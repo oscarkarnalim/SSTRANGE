@@ -53,17 +53,57 @@ public class MainFrame extends JFrame {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
+//		args = new String[] {"C:\\Users\\oscar\\Desktop\\06_LAB_PYTHON", "zip", "py", "id", "40", "10", "10", "none", "true", "minhash", "C:\\Users\\oscar\\eclipse-workspace\\sstrange", "2", "1"};
+//		
+		// if args has arguments, execute as a library
+		if (args.length > 0) {
+			executeConsole(args);
+			
+//			String assignmentPath = args[0];
+//			String submissionType = args[1];
+//			String progLang = args[2];
+//			String humanLang = args[3];
+//			int simThreshold = Integer.parseInt(args[4]);
+//			int minMatchingLength = Integer.parseInt(args[5]);
+//			int maxPairs = Integer.parseInt(args[6]);
+//
+//			String templateDirPath = args[7];
+//			if (templateDirPath == null)
+//				templateDirPath = "";
+//
+//			String similarityMeasurementType = args[8];
+//			boolean isCommonCodeAllowed = Boolean.parseBoolean(args[9]);
+//
+//			pairTemplatePath = args[10] + File.separator + pairTemplatePath;
+//			indexTemplatePath = args[10] + File.separator + indexTemplatePath;
+//			additional_dir_path = args[10] + File.separator + additional_dir_path;
+//			javaAdditionalKeywords = args[10] + File.separator + javaAdditionalKeywords;
+//			pyAdditionalKeywords = args[10] + File.separator + pyAdditionalKeywords;
+//
+//			int numClusters = 2;
+//			int numStages = 1;
+//
+//			if (similarityMeasurementType.equals("MinHash") || similarityMeasurementType.equals("Super-Bit")) {
+//				numClusters = Integer.parseInt(args[11]);
+//				numStages = Integer.parseInt(args[12]);
+//			}
+//
+//			process(assignmentPath, submissionType, progLang, humanLang, simThreshold, maxPairs, minMatchingLength,
+//					templateDirPath, isCommonCodeAllowed, similarityMeasurementType, numClusters, numStages);
 
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					MainFrame frame = new MainFrame();
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
+		} else {
+			// if empty, show the UI
+			EventQueue.invokeLater(new Runnable() {
+				public void run() {
+					try {
+						MainFrame frame = new MainFrame();
+						frame.setVisible(true);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
-			}
-		});
+			});
+		}
 	}
 
 	/**
@@ -130,8 +170,7 @@ public class MainFrame extends JFrame {
 		contentPane.add(submissionTypeField);
 
 		progLangField = new JComboBox();
-		progLangField.setModel(
-				new DefaultComboBoxModel(new String[] { "Java", "Python", "C", "C++", "C#", "Scheme", "Text" }));
+		progLangField.setModel(new DefaultComboBoxModel(new String[] { "Java", "Python" }));
 		progLangField.setFont(new Font("Times New Roman", Font.PLAIN, 14));
 		progLangField.setBounds(250, 120, 249, 30);
 		contentPane.add(progLangField);
@@ -282,7 +321,7 @@ public class MainFrame extends JFrame {
 
 		similarityMeasurement = new JComboBox();
 		similarityMeasurement.setModel(
-				new DefaultComboBoxModel(new String[] {"MinHash", "Super-Bit", "Jaccard", "Cosine", "RKRGST"}));
+				new DefaultComboBoxModel(new String[] { "MinHash", "Super-Bit", "Jaccard", "Cosine", "RKRGST" }));
 		similarityMeasurement.setSelectedIndex(0);
 		similarityMeasurement.setFont(new Font("Times New Roman", Font.PLAIN, 14));
 		similarityMeasurement.setBounds(250, 470, 249, 30);
@@ -396,13 +435,36 @@ public class MainFrame extends JFrame {
 		if (errorMessage.length() > 0) {
 			JOptionPane.showMessageDialog(this, errorMessage, "Error(s)", JOptionPane.ERROR_MESSAGE);
 		} else {
+			// only used for lsh algorithms
+			int numClusters = 2;
+			int numStages = 1;
+
+			String similarityType = similarityMeasurement.getSelectedItem().toString();
+			if (similarityType.equals("MinHash") || similarityType.equals("Super-Bit")) {
+				// set num of cluster
+				Object[] options = new Object[] { "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+				Object selectedCluster = JOptionPane.showInputDialog(this, "Num of clusters:", "Num of clusters",
+						JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+				if (selectedCluster == null)
+					return;
+				numClusters = Integer.parseInt(selectedCluster.toString());
+
+				// set num of stages
+				options = new Object[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+				Object selectedStages = JOptionPane.showInputDialog(this, "Num of stages:", "Num of stages",
+						JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+				if (selectedStages == null)
+					return;
+				numStages = Integer.parseInt(selectedStages.toString());
+			}
+
 			// notification to wait
 			JOptionPane.showMessageDialog(this, "Please wait till another pop-up appears!");
 			// start processing
 			String resultPath = process(assignmentPath, submissionTypeField.getSelectedItem().toString(),
 					progLangField.getSelectedItem().toString(), humanLang, simThreshold, maxPairs, minMatchLength,
 					templateDirPath, commonCodeField.getSelectedIndex() == 0 ? true : false,
-					similarityMeasurement.getSelectedItem().toString());
+					similarityMeasurement.getSelectedItem().toString(), numClusters, numStages);
 
 			if (resultPath != null) {
 				// set the clipboard
@@ -414,14 +476,196 @@ public class MainFrame extends JFrame {
 				JOptionPane.showMessageDialog(this,
 						"The comparison process is completed\nThe report link has been copied to the clipboard\nSimply paste it in a web browser");
 			}
-
 		}
 
 	}
 
-	public String process(String assignmentPath, String submissionType, String progLang, String humanLang,
+	private static void executeConsole(String[] args) {
+
+		// arguments should be 10 or 12
+		if (args.length != 11 && args.length != 13) {
+			System.out.println("Error: the arguments should be either 11 or 13\n");
+			return;
+		}
+
+		// to store error message
+		String errorMessage = "";
+
+		String assignmentPath = "";
+		String path = args[0];
+		// check whether the path is not valid
+		File f = new File(path);
+		if (f.exists() == false)
+			errorMessage += "1st argument: the assignment path does not exist\n";
+		else
+			assignmentPath = path;
+
+		String submissionType = "";
+		String rawSubmissionType = args[1];
+		if (rawSubmissionType.equals("file"))
+			submissionType = "Single file";
+		else if (rawSubmissionType.equals("dir"))
+			submissionType = "Multiple files in a directory";
+		else if (rawSubmissionType.equals("zip"))
+			submissionType = "Multiple files in a zip";
+		else
+			errorMessage += "2nd argument: submission type should be either \"file\", \"dir\", or \"zip\"\n";
+
+		String progLang = "";
+		String rawProgLang = args[2];
+		if (rawProgLang.equalsIgnoreCase("java"))
+			progLang = "Java";
+		else if (rawProgLang.equalsIgnoreCase("py"))
+			progLang = "Python";
+		else
+			errorMessage += "3rd argument: the programming language should be either \"java\" or \"py\"\n";
+
+		String humanLang = "";
+		String rawHumanLang = args[3];
+		if (rawHumanLang.equalsIgnoreCase("en"))
+			humanLang = "en";
+		else if (rawHumanLang.equalsIgnoreCase("id"))
+			humanLang = "id";
+		else
+			errorMessage += "4th argument: the human language should be either \"en\" or \"id\"\n";
+
+		int simThreshold = 0;
+		String text = args[4];
+		try {
+			simThreshold = Integer.parseInt(text);
+			if (simThreshold < 0 || simThreshold > 100)
+				// if not in range
+				errorMessage += "5th argument: the similarity threshold should be from 0 to 100 inclusive\n";
+		} catch (Exception e) {
+			// if not parsed correctly, the input is not integer
+			errorMessage += "5th argument: the similarity threshold should be an integer\n";
+		}
+
+		int minMatchLength = 0;
+		text = args[5];
+		try {
+			minMatchLength = Integer.parseInt(text);
+			if (minMatchLength < 2)
+				// if not in range
+				errorMessage += "6th argument: the minimum matching length should be at least 2\n";
+		} catch (Exception e) {
+			// if not parsed correctly, the input is not integer
+			errorMessage += "6th argument: the minimum matching length should be an integer\n";
+		}
+
+		int maxPairs = 0;
+		text = args[6];
+		try {
+			maxPairs = Integer.parseInt(text);
+			if (maxPairs < 1)
+				// if not in range
+				errorMessage += "7th argument: the maximum program pairs reported should be at least 1\n";
+		} catch (Exception e) {
+			// if not parsed correctly, the input is not integer
+			errorMessage += "7th argument: the maximum program pairs reported should be an integer\n";
+		}
+
+		String templateDirPath = "";
+		path = args[7];
+		if (path.equals("none") == false) {
+			// check whether the path is not valid
+			f = new File(path);
+			if (f.exists() == false)
+				errorMessage += "8th argument: the template directory path does not exist\n";
+			else
+				templateDirPath = path;
+		}
+
+		boolean isCommonCodeAllowed = false;
+		text = args[8];
+		try {
+			isCommonCodeAllowed = Boolean.parseBoolean(text);
+		} catch (Exception e) {
+			// if not parsed correctly, the input is not boolean
+			errorMessage += "9th argument: the common code status should be either \"true\" or \"false\"\n";
+		}
+
+		String similarityMeasurementType = "";
+		String rawSimilarityMeasurementType = args[9];
+		if (rawSimilarityMeasurementType.equalsIgnoreCase("MinHash"))
+			similarityMeasurementType = "MinHash";
+		else if (rawSimilarityMeasurementType.equalsIgnoreCase("Super-Bit"))
+			similarityMeasurementType = "Super-Bit";
+		else if (rawSimilarityMeasurementType.equalsIgnoreCase("Jaccard"))
+			similarityMeasurementType = "Jaccard";
+		else if (rawSimilarityMeasurementType.equalsIgnoreCase("Cosine"))
+			similarityMeasurementType = "Cosine";
+		else if (rawSimilarityMeasurementType.equalsIgnoreCase("RKRGST"))
+			similarityMeasurementType = "RKRGST";
+		else
+			errorMessage += "10th argument: similarity measurement type should be either \"SimHash\", \"Super-Bit\", \"Jaccard\",  \"Cosine\", or \"RKRGST\"\n";
+
+		String resourcePath = args[10];
+		// check whether the path is not valid
+		f = new File(resourcePath);
+		if (f.exists() == false)
+			errorMessage += "11th argument: the assignment path does not exist\n";
+
+		pairTemplatePath = resourcePath + File.separator + pairTemplatePath;
+		indexTemplatePath = resourcePath + File.separator + indexTemplatePath;
+		additional_dir_path = resourcePath + File.separator + additional_dir_path;
+		javaAdditionalKeywords = resourcePath + File.separator + javaAdditionalKeywords;
+		pyAdditionalKeywords = resourcePath + File.separator + pyAdditionalKeywords;
+
+		int numClusters = 2;
+		int numStages = 1;
+
+		if (similarityMeasurementType.equals("MinHash") || similarityMeasurementType.equals("Super-Bit")) {
+			text = args[11];
+			try {
+				numClusters = Integer.parseInt(text);
+				if (numClusters < 2)
+					// if not in range
+					errorMessage += "12th argument: the number of clusters should be at least 2\n";
+			} catch (Exception e) {
+				// if not parsed correctly, the input is not integer
+				errorMessage += "12th argument: the number of clusters should be an integer\n";
+			}
+
+			text = args[12];
+			try {
+				numStages = Integer.parseInt(text);
+				if (numStages < 1)
+					// if not in range
+					errorMessage += "13th argument: the number of stages should be at least 1\n";
+			} catch (Exception e) {
+				// if not parsed correctly, the input is not integer
+				errorMessage += "13th argument: the number of stages should be an integer\n";
+			}
+		}
+
+		if (errorMessage.length() > 0) {
+			System.out.println("Error(s)\n" + errorMessage);
+		} else {
+			// notification to wait
+			System.out.println("Please wait...");
+			// start processing
+			String resultPath = process(assignmentPath, submissionType, progLang, humanLang, simThreshold, maxPairs,
+					minMatchLength, templateDirPath, isCommonCodeAllowed, similarityMeasurementType, numClusters,
+					numStages);
+
+			if (resultPath != null) {
+				// set the clipboard
+				StringSelection stringSelection = new StringSelection(resultPath);
+				Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+				clipboard.setContents(stringSelection, null);
+
+				// notify user that the process has been completed
+				System.out.println(
+						"The comparison process is completed\nThe report link has been copied to the clipboard\nSimply paste it in a web browser");
+			}
+		}
+
+	}
+
+	public static String process(String assignmentPath, String submissionType, String progLang, String humanLang,
 			int simThreshold, int maxPairs, int minMatchingLength, String templateDirPath, boolean isCommonCodeAllowed,
-			String similarityMeasurement) {
+			String similarityMeasurement, int numClusters, int numStages) {
 
 		ArrayList<File> filesToBeDeleted = new ArrayList<File>();
 
@@ -432,10 +676,10 @@ public class MainFrame extends JFrame {
 
 		// if the programming language is either java or python, set it to STRANGE's
 		// format
-		if (progLang.equals("Java")) {
+		if (progLang.equals("Java") || progLang.equals("java")) {
 			progLang = "java";
 			additionalKeywordsPath = "java_keywords.txt";
-		} else if (progLang.equals("Python")) {
+		} else if (progLang.equals("Python") || progLang.equals("py")) {
 			progLang = "py";
 			additionalKeywordsPath = "python_keywords.txt";
 		}
@@ -450,13 +694,14 @@ public class MainFrame extends JFrame {
 		}
 
 		boolean isMultipleFiles = false;
-		if ((progLang.equals("java") || progLang.equals("py")) && submissionType.startsWith("Multiple files"))
+		if (submissionType.startsWith("Multiple files"))
 			isMultipleFiles = true;
 
 		// do the comparison
 		FastComparer.doSyntacticComparison(assignmentPath, progLang, humanLang, simThreshold, minMatchingLength,
 				maxPairs, templateDirPath, similarityMeasurement, assignmentFile, assignmentParentDirPath,
-				assignmentName, isMultipleFiles, isCommonCodeAllowed, additionalKeywordsPath, filesToBeDeleted);
+				assignmentName, isMultipleFiles, isCommonCodeAllowed, additionalKeywordsPath, filesToBeDeleted,
+				numClusters, numStages);
 
 		// start deleting all files
 		for (File f : filesToBeDeleted)

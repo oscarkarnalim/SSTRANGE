@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import p3.feedbackgenerator.token.FeedbackToken;
+import sstrange.token.FeedbackToken;
 
 public class IndexGenerator {
 	public static HashMap<String, ArrayList<Integer>> generateIndex(ArrayList<FeedbackToken> in, int ngram) {

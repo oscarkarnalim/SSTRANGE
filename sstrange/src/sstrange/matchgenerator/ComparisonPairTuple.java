@@ -2,24 +2,26 @@ package sstrange.matchgenerator;
 
 import java.util.ArrayList;
 
+import sstrange.token.FeedbackToken;
 import support.stringmatching.GSTMatchTuple;
 
 public class ComparisonPairTuple implements Comparable<ComparisonPairTuple> {
-	private String codePath1, codePath2, assignmentName1, assignmentName2;
+	private int submissionID1, submissionID2;
 	private double simResult;
-	private int clusterID;
+	private int sameClusterOccurrences;
 	private String resultedHTMLFilename;
 	private ArrayList<GSTMatchTuple> matches;
+	private String assignmentName1, assignmentName2;
 
-	public ComparisonPairTuple(String codePath1, String codePath2, String assignmentName1, String assignmentName2,
-			double simResult, int clusterID, ArrayList<GSTMatchTuple> matches) {
+	public ComparisonPairTuple(int submissionID1, int submissionID2, String assignmentName1, String assignmentName2,
+			double simResult, int sameClusterOccurrences, ArrayList<GSTMatchTuple> matches) {
 		super();
-		this.codePath1 = codePath1;
-		this.codePath2 = codePath2;
+		this.submissionID1 = submissionID1;
+		this.submissionID2 = submissionID2;
 		this.assignmentName1 = assignmentName1;
 		this.assignmentName2 = assignmentName2;
 		this.simResult = simResult;
-		this.clusterID = clusterID;
+		this.sameClusterOccurrences = sameClusterOccurrences;
 		this.resultedHTMLFilename = "";
 		this.matches = matches;
 	}
@@ -32,20 +34,52 @@ public class ComparisonPairTuple implements Comparable<ComparisonPairTuple> {
 		this.resultedHTMLFilename = resultedHTMLFilename;
 	}
 
-	public String getCodePath1() {
-		return codePath1;
+
+	@Override
+	public int compareTo(ComparisonPairTuple arg0) {
+		// sort based on avg sim in descending order
+		return (int) ((-getSimResult() + arg0.getSimResult()) * 100000);
 	}
 
-	public void setCodePath1(String codePath1) {
-		this.codePath1 = codePath1;
+
+	public int getSameClusterOccurrences() {
+		return sameClusterOccurrences;
 	}
 
-	public String getCodePath2() {
-		return codePath2;
+	public void setSameClusterOccurrences(int sameClusterOccurrences) {
+		this.sameClusterOccurrences = sameClusterOccurrences;
 	}
 
-	public void setCodePath2(String codePath2) {
-		this.codePath2 = codePath2;
+	public int getSubmissionID1() {
+		return submissionID1;
+	}
+
+	public void setSubmissionID1(int submissionID1) {
+		this.submissionID1 = submissionID1;
+	}
+
+	public int getSubmissionID2() {
+		return submissionID2;
+	}
+
+	public void setSubmissionID2(int submissionID2) {
+		this.submissionID2 = submissionID2;
+	}
+
+	public double getSimResult() {
+		return simResult;
+	}
+
+	public void setSimResult(double simResult) {
+		this.simResult = simResult;
+	}
+
+	public ArrayList<GSTMatchTuple> getMatches() {
+		return matches;
+	}
+
+	public void setMatches(ArrayList<GSTMatchTuple> matches) {
+		this.matches = matches;
 	}
 
 	public String getAssignmentName1() {
@@ -64,37 +98,4 @@ public class ComparisonPairTuple implements Comparable<ComparisonPairTuple> {
 		this.assignmentName2 = assignmentName2;
 	}
 
-	public double getSimResult() {
-		return simResult;
-	}
-
-	public void setSimResult(double simResult) {
-		this.simResult = simResult;
-	}
-
-	public int getClusterID() {
-		return clusterID;
-	}
-
-	public void setClusterID(int clusterID) {
-		this.clusterID = clusterID;
-	}
-
-	public ArrayList<GSTMatchTuple> getMatches() {
-		return matches;
-	}
-
-	public void setMatches(ArrayList<GSTMatchTuple> matches) {
-		this.matches = matches;
-	}
-
-	@Override
-	public int compareTo(ComparisonPairTuple arg0) {
-		// sort based on avg sim in descending order
-		return (int) ((-getSimResult() + arg0.getSimResult()) * 100000);
-	}
-
-	public String toString() {
-		return assignmentName1 + " " + assignmentName2 + " " + getSimResult();
-	}
 }
