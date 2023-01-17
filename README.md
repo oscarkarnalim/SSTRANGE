@@ -57,7 +57,7 @@ How similarities will be detected. The options are MinHash, Super-Bit, Jaccard, 
 ## Command line usage
 ```
 <assessment path> <submission type> <submission language> <explanation language> <minimum similarity threshold> <maximum reported submission pairs> <minimum matching length> <template directory path> <common content> <similarity measurement> <resourxe path> <number of clusters> <number of stages>
-```
+
 
 <assessment path>: absolute directory path (String) 
 <submission type>: "file", "dir", or "zip" 
@@ -72,6 +72,8 @@ How similarities will be detected. The options are MinHash, Super-Bit, Jaccard, 
 <resourxe path>: absolute directory path to SSTRANGE resource dir (String) 
 <number of clusters>: positive integer no less than 2 (only used for minhash and super-bit) 
 <number of stages>: positive integer (only used for minhash and super-bit) 
+
+```
 
 ## Acknowledgments
 This tool uses [STRANGE](https://github.com/oscarkarnalim/strange) as the basis of development, [CSTRANGE](https://github.com/oscarkarnalim/strange) to develop user interface, [ANTLR](https://www.antlr.org/) to tokenise given submissions, [tdebatty's module](https://github.com/tdebatty/java-LSH) to do locality sensitive hashing, and [Google Prettify](https://github.com/google/code-prettify) to display source code.
