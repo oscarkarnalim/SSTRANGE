@@ -7,10 +7,19 @@ SSTRANGE and CSTRANGE has comparable features: graphical user interface, templat
 
 ## User Interface
 ### Main layout
+<p align="center">
+<img width="40%" src="https://www.mdpi.com/education/education-13-00054/article_deploy/html/images/education-13-00054-g002-550.jpg">
+</p>
 
-### Investigation report
+### Navigation layout
+<p align="center">
+<img width="80%" src="https://www.mdpi.com/education/education-13-00054/article_deploy/html/images/education-13-00054-g003-550.jpg">
+</p>
 
-### Comparison report
+### Pairwise similarity report
+<p align="center">
+<img width="80%" src="https://www.mdpi.com/education/education-13-00054/article_deploy/html/images/education-13-00054-g004-550.jpg">
+</p>
 
 ## Input 
 ### Assessment path
