@@ -24,6 +24,21 @@ public class JaccardCalculator {
 		// return the vector
 		return vector;
 	}
+	
+	public static boolean[] updateBooleanVectorFromTokenString(boolean[] vector, HashMap<String, ArrayList<Integer>> tokenIndex,
+			ArrayList<String> vectorHeader) {
+		// update vector based on content
+
+		// convert to true if the header is found in the index
+		for (int i = 0; i < vectorHeader.size(); i++) {
+			if (tokenIndex.get(vectorHeader.get(i)) != null) {
+				vector[i] = true;
+			}
+		}
+
+		// return the vector
+		return vector;
+	}
 
 	public static double calculateJaccardSimilarity(HashMap<String, ArrayList<Integer>> tokenIndex1,
 			HashMap<String, ArrayList<Integer>> tokenIndex2) {

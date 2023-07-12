@@ -20,7 +20,7 @@ import support.LibTuple;
 public class JavaPyCommonTemplateRemover {
 	public static String removeCommonAndTemplateCodeJavaPython(String assignmentPath, int minMatchingLength,
 			String templateDirPath, boolean isCommonCodeAllowed, String progLang, String assignmentParentDirPath,
-			String assignmentName, ArrayList<File> filesToBeDeleted, String additionalKeywordPath) {
+			String assignmentName, ArrayList<File> filesToBeDeleted) {
 		/*
 		 * this method remove common and template code. It then returns the new
 		 * assignment path as the output
@@ -34,7 +34,7 @@ public class JavaPyCommonTemplateRemover {
 			// if common code is not allowed, remove
 			try {
 
-				ArrayList<CommonSegmentTuple> ccresult = CommonSegmentGenerator.execute(assignmentPath, additionalKeywordPath, progLang,
+				ArrayList<CommonSegmentTuple> ccresult = CommonSegmentGenerator.execute(assignmentPath, null, progLang,
 						0.5, minMatchingLength, minMatchingLength + 40);
 				generateCommonCodeFile(ccresult, progLang, codeToBeRemovedFilePath);
 			} catch (Exception e) {

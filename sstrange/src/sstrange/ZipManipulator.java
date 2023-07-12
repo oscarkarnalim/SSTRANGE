@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.Enumeration;
 import java.util.Stack;
 import java.util.zip.ZipEntry;
@@ -70,7 +71,8 @@ public class ZipManipulator {
 		 */
 		String zipFilePath = zipFileDir + File.separator + zipFileName;
 		try {
-			ZipFile zipFile = new ZipFile(zipFilePath);
+			Charset CP437 = Charset.forName("CP437");
+			ZipFile zipFile = new ZipFile(zipFilePath, CP437);
 
 			Enumeration<? extends ZipEntry> entries = zipFile.entries();
 

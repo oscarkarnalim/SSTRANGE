@@ -27,6 +27,24 @@ public class CosineCalculator {
 		// return the vector
 		return vector;
 	}
+	
+	public static double[] updateOccurrenceVectorFromTokenString(double[] vector, HashMap<String, ArrayList<Integer>> tokenIndex,
+			ArrayList<String> vectorHeader) {
+		// update vector based on content
+
+		// set the value if the header is found in the index
+		for (int i = 0; i < vectorHeader.size(); i++) {
+			ArrayList<Integer> val = tokenIndex.get(vectorHeader.get(i));
+			if (val != null) {
+				vector[i] = val.size();
+			} else {
+				vector[i] = 0;
+			}
+		}
+
+		// return the vector
+		return vector;
+	}
 
 	public static double calculateCosineSimilarity(HashMap<String, ArrayList<Integer>> tokenIndex1,
 			HashMap<String, ArrayList<Integer>> tokenIndex2) {

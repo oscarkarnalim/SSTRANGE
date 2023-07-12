@@ -8,9 +8,8 @@ import support.stringmatching.GreedyStringTiling;
 
 public class FeedbackMessageGenerator {
 
-	public static ArrayList<FeedbackMessage> generateSimilarityMessages(
-			ArrayList<FeedbackToken> syntaxTokenString1, ArrayList<FeedbackToken> syntaxTokenString2,
-			ArrayList<FeedbackToken> rawTokenString1, ArrayList<FeedbackToken> rawTokenString2, int minimumMatchLength, String humanLanguageCode,
+	public static ArrayList<FeedbackMessage> generateSimilarityMessages(ArrayList<FeedbackToken> syntaxTokenString1,
+			ArrayList<FeedbackToken> syntaxTokenString2, int minimumMatchLength, String humanLanguageCode,
 			ArrayList<GSTMatchTuple> simTuples) {
 
 		// create a list to store the results
@@ -30,60 +29,15 @@ public class FeedbackMessageGenerator {
 				syntaxTokenList2.add(syntaxTokenString2.get(cur.textPosition + j));
 			}
 
-			// calculate how many modifications on the tokens' whitespaces.
-			boolean areWhitespacesModified = false;
-			int syntaxwhitespaceStartIdx1 = rawTokenString1.indexOf(syntaxTokenList1.get(0));
-			int syntaxwhitespaceFinishIdx1 = rawTokenString1.indexOf(syntaxTokenList1.get(syntaxTokenList1.size() - 1));
-			int syntaxwhitespaceStartIdx2 = rawTokenString2.indexOf(syntaxTokenList2.get(0));
-			int syntaxwhitespaceFinishIdx2 = rawTokenString2.indexOf(syntaxTokenList2.get(syntaxTokenList2.size() - 1));
-
-			/*
-			 * if the first code has different number of tokens than the counterpart, then
-			 * the whitespaces are modified.
-			 */
-			if (syntaxwhitespaceFinishIdx1 - syntaxwhitespaceStartIdx1 != syntaxwhitespaceFinishIdx2
-					- syntaxwhitespaceStartIdx2)
-				areWhitespacesModified = true;
-			else {
-				/*
-				 * otherwise, check for each whitespace pair
-				 */
-				for (int j = 0; j < syntaxwhitespaceFinishIdx1 - syntaxwhitespaceStartIdx1; j++) {
-					FeedbackToken f1 = rawTokenString1.get(syntaxwhitespaceStartIdx1 + j);
-					FeedbackToken f2 = rawTokenString2.get(syntaxwhitespaceStartIdx2 + j);
-
-					if (f1.getType().equals("WS") && f2.getType().equals("WS")
-							&& f1.getContent().equals(f2.getContent()) == false) {
-						/*
-						 * if both are whitespaces but in different forms, count as a modification
-						 */
-						areWhitespacesModified = true;
-						break;
-					} else if (f1.getType().equals("WS") && f2.getType().equals("WS") == false) {
-						/*
-						 * if one of them is whitespace while another is not, count as a modification
-						 */
-						areWhitespacesModified = true;
-						break;
-					} else if (f1.getType().equals("WS") == false && f2.getType().equals("WS")) {
-						/*
-						 * if one of them is whitespace while another is not, count as a modification
-						 */
-						areWhitespacesModified = true;
-						break;
-					}
-				}
-			}
-
 			// create the message and add it
 			SyntaxFeedbackMessage m = new SyntaxFeedbackMessage("copied", "syntax token", syntaxTokenList1,
-					syntaxTokenList2, areWhitespacesModified, humanLanguageCode);
+					syntaxTokenList2, humanLanguageCode);
 			messages.add(m);
 		}
 
 		return messages;
 	}
-	
+
 	public static ArrayList<GSTMatchTuple> generateMatchedTuples(ArrayList<FeedbackToken> tokenString1,
 			ArrayList<FeedbackToken> tokenString2, int minimumMatchLength) {
 		// create array of string for both whitespace strings

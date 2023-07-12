@@ -1,0 +1,662 @@
+<html>
+	<head>
+		<title> Observing @codepath1 and @codepath2 </title>
+		<link rel="icon" href="strange_html_layout_additional_files/icon.png">
+		<!-- Google Prettify to generate highlight https://github.com/google/code-prettify -->
+		<!-- <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script> -->
+		<script src="strange_html_layout_additional_files/run_prettify.js"></script>
+		<script>
+			/* for tabbed view. copied and modified from https://www.w3schools.com/howto/howto_js_tabs.asp */
+			function construct(){
+				// invoke the first code panel so that it is displayed
+				document.getElementById("origbutton").click();
+			}
+			// function to change tab
+			function openTab(evt, tabName, tableId) {
+			  // Declare all variables
+			  var i, tabcontent, tablinks;
+			  // Get all elements with class="tabcontent" and hide them
+			  tabcontent = document.getElementsByClassName("tabcontent");
+			  for (i = 0; i < tabcontent.length; i++) {
+			    tabcontent[i].style.display = "none";
+			  }
+			  // Get all elements with class="tablinks" and remove the class "active"
+			  tablinks = document.getElementsByClassName("tablinks");
+			  for (i = 0; i < tablinks.length; i++) {
+			    tablinks[i].className = tablinks[i].className.replace(" active", "");
+			  }
+			  // Show the current tab, and add an "active" class to the button that opened the tab
+			  document.getElementById(tabName).style.display = "block";
+			  evt.currentTarget.className += " active";
+
+				// reset the table and focus
+				recolorTableContent(tableId);
+
+				isFocusKept = true;
+				if(selectedCodeFragmentId == null){ // if no selected fragment, nothing to be kept
+					isFocusKept = false;
+				}
+
+				// if the selected fragment needs to be kept
+				if(isFocusKept){
+					// get the number
+					numId = '';
+					if(selectedCodeFragmentId.includes('syon')){
+						numId = selectedCodeFragmentId.substring(5,selectedCodeFragmentId.length);
+					}else{
+						numId = selectedCodeFragmentId.substring(1,selectedCodeFragmentId.length);
+					}
+
+					// get the mode
+					mode = '';
+					if(tabName == "syntaxonly"){
+						mode = 'syon';
+					}
+					// get the new ID
+					newId = selectedCodeFragmentId[0] + mode + numId;
+					// reset current focus
+					resetCurrentFocus();
+					// mark selected
+					markSelected(newId,tableId);
+				}else{
+					resetCurrentFocus();
+				}
+			}
+			/* ===*/
+
+			// to highlight code
+			var selectedCodeFragmentId = null;
+			function markSelectedWithoutChangingTableFocus(id, tableId){
+				if(selectedCodeFragmentId != null){
+					resetCurrentFocus();
+					// for header table, recolor the contents
+					recolorTableContent(tableId);
+				}
+				// set the CSS of currently selected fragment
+				var defaultColour = "";
+				if(id.startsWith("s")){
+					defaultColour = "rgba(244,161,164,1)";
+				}
+				// for left panel
+				recolorCodeFragment(id + "a",defaultColour);
+				window.location.hash = '#' + id + "a";
+				// for right panel
+				recolorCodeFragment(id + "b",defaultColour);
+				window.location.hash = '#' + id + "b";
+				// for header table, recolor the row
+				recolorCodeFragment(id + "hr",defaultColour);
+				// for natural language explanation
+				document.getElementById(id +"he").style.display = "block";
+				selectedCodeFragmentId = id;
+			}
+
+			var previousSumId = null;
+			function displaySelectedSummary(id, tableId){
+				if(previousSumId != null){
+					// hide the current explanation
+					document.getElementById(previousSumId +"he").style.display = "none";
+					// for header table, recolor the contents
+					recolorTableContent(tableId);
+				}
+
+				// for header table, recolor the row
+				recolorCodeFragment(id + "hr","rgba(60,200,246,1)");
+				// for natural language explanation
+				document.getElementById(id +"he").style.display = "block";
+				previousSumId= id;
+			}
+
+			function resetCurrentFocus(){
+				// do nothing if selectedCodeFragmentId is null
+				if(selectedCodeFragmentId == null)
+					return;
+
+
+				// reset the CSS of previously selected fragment
+				var defaultColour = "rgba(244,211,214,1)";
+
+
+				// for natural language explanation
+				document.getElementById(selectedCodeFragmentId +"he").style.display = "none";
+				// for left panel
+				recolorCodeFragment(selectedCodeFragmentId +"a", defaultColour);
+				// for right panel
+				recolorCodeFragment(selectedCodeFragmentId +"b", defaultColour);
+
+				selectedCodeFragmentId = null;
+			}
+
+
+			function markSelected(id, tableId){
+				// for header table, redirect to the row's link
+				window.location.hash = '#' + id + "hl";
+				// mark all related components on both code views and the table.
+				markSelectedWithoutChangingTableFocus(id, tableId);
+			}
+
+			// recolor a code fragment with its following rows
+			function recolorCodeFragment(id, defaultColour){
+				document.getElementById(id).style.backgroundColor = defaultColour;
+				// check the following rows which id is the same as the given parameter except concatenated with a positive number.
+				for(var i=1;;i++){
+					var childId = id + i;
+					var child = document.getElementById(childId);
+					if(child == null){
+						break;
+					}else{
+						child.style.backgroundColor = defaultColour;
+					}
+				}
+			}
+
+			// copied and modified from https://www.w3schools.com/howto/howto_js_copy_clipboard.asp
+			function copyPathToClipboard(id) {
+				/* Get the text field */
+				var copyText = document.getElementById(id);
+				/* Select the text field */
+				copyText.select();
+				/* Copy the text inside the text field */
+				document.execCommand("copy");
+			}
+
+			// sort table content. Copied and modified from https://www.w3schools.com/howto/howto_js_sort_table.asp
+			function sortTable(n, tableId, isNumber, tableContainerId) {
+			  var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+			  table = document.getElementById(tableId);
+			  switching = true;
+			  // Set the sorting direction to ascending:
+			  dir = "asc";
+			  /* Make a loop that will continue until
+			  no switching has been done: */
+			  while (switching) {
+			    // Start by saying: no switching is done:
+			    switching = false;
+			    rows = table.rows;
+			    /* Loop through all table rows */
+			    for (i = 0; i < (rows.length - 1); i++) {
+			      // Start by saying there should be no switching:
+			      shouldSwitch = false;
+			      /* Get the two elements you want to compare,
+			      one from current row and one from the next: */
+			      x = rows[i].getElementsByTagName("TD")[n];
+			      y = rows[i + 1].getElementsByTagName("TD")[n];
+				  	if(n==0){
+							/*
+							* the column content is encapsulated with a link and can provide confusing result
+							* as the <A> tag is considered in comparison
+							*/
+							x = x.getElementsByTagName("A")[0];
+							y = y.getElementsByTagName("A")[0];
+				  	}
+			      /* Check if the two rows should switch place,
+			      based on the direction, asc or desc: */
+			      if (dir == "asc") {
+							if(isNumber == true){
+								numx = Number(x.innerHTML.split(" ")[0]);
+								numy = Number(y.innerHTML.split(" ")[0]);
+								if (numx > numy ){
+				          // If so, mark as a switch and break the loop:
+				          shouldSwitch = true;
+				          break;
+				        }
+							}else{
+				        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+				          // If so, mark as a switch and break the loop:
+				          shouldSwitch = true;
+				          break;
+				        }
+							}
+			      } else if (dir == "desc") {
+							if(isNumber == true){
+								numx = Number(x.innerHTML.split(" ")[0]);
+								numy = Number(y.innerHTML.split(" ")[0]);
+								if (numx < numy ){
+				          // If so, mark as a switch and break the loop:
+				          shouldSwitch = true;
+				          break;
+				        }
+							}else{
+				        if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+				          // If so, mark as a switch and break the loop:
+				          shouldSwitch = true;
+				          break;
+				        }
+							}
+			      }
+			    }
+			    if (shouldSwitch) {
+			      /* If a switch has been marked, make the switch
+			      and mark that a switch has been done: */
+			      rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+			      switching = true;
+			      // Each time a switch is done, increase this count by 1:
+			      switchcount ++;
+			    } else {
+			      /* If no switching has been done AND the direction is "asc",
+			      set the direction to "desc" and run the while loop again. */
+			      if (switchcount == 0 && dir == "asc") {
+			        dir = "desc";
+			        switching = true;
+			      }
+			    }
+			  }
+
+				recolorTableContent(tableId);
+				// set to the same selection as prior sorted
+				if(selectedCodeFragmentId != null)
+					markSelected(selectedCodeFragmentId,tableId);
+				if(previousSumId != null)
+					displaySelectedSummary(previousSumId, tableId)
+			}
+
+			function recolorTableContent(tableId){
+				table = document.getElementById(tableId);
+				rows = table.rows;
+				/* Loop through all table rows */
+				for (i = 0; i < rows.length; i++) {
+					if(i%2 == 0){
+						rows[i].style.backgroundColor = "rgba(255,255,255,1)";
+					}else {
+						rows[i].style.backgroundColor = "#eeeeee";
+					}
+				}
+			}
+		</script>
+		<style>
+			body{
+				font-family: "Times New Roman", Times, serif;
+				font-size: 14px;
+			}
+			a{
+				text-decoration: none;
+				color: black;
+			}
+
+			/* copied and modified from https://www.w3schools.com/css/css3_buttons.asp */
+			button {
+				background-color: rgba(0,140,186,1);
+				border: none;
+				color: white;
+				padding: 2px 4px;
+				text-align: center;
+				text-decoration: none;
+				display: inline-block;
+				cursor: pointer;
+			}
+			/* ===*/
+
+			/* for info panel at top */
+			div.settingpanel{
+				float:left;
+				width:100%;
+			}
+
+			/* for code view */
+			div.codeview{
+				float:left;
+				width: 49%;
+				height:68%;
+				margin-right: 1%;
+			}
+			pre{
+				tab-size: 2;
+				overflow: auto;
+				width: 100%;
+				height:100%;
+				float:left;
+			}
+			.syntaxsim{
+				background-color:rgba(244,211,214,1);
+			}
+			/* copied from https://stackoverflow.com/questions/8399547/how-to-add-line-numbers-to-all-lines-in-google-prettify
+			 to make each line numbered */
+			.linenums li {
+					list-style-type: decimal;
+			}
+			/* ===*/
+
+			/* for tabbed view. copied and modified from https://www.w3schools.com/howto/howto_js_tabs.asp */
+			.tab {
+			  float:left;
+				width:100%;
+				background-color: rgba(0,140,186,1);
+			}
+			button.tablinks {
+				border:none;
+				outline: none;
+			  float: left;
+			  cursor: pointer;
+			  padding: 6px 20px;
+				height:30px;
+			  transition: 0.3s;
+			}
+			.tab button:hover {
+			  background-color: rgba(20,160,206,1);
+			}
+			.tab button.active {
+			  background-color: rgba(40,180,226,1);
+			}
+			div.tabcontent {
+				float:left;
+				width:99%;
+				height:80%;
+				display: none;
+				border-top: none;
+			}
+
+			span.infotitle{
+				margin-top:10px;
+				float:left;
+				width: 49%;
+				height:4%;
+				font-size: 14px;
+				font-weight: bold;
+				margin-right:1%;
+			}
+
+			/* for table, copied and modified from https://www.w3schools.com/html/tryit.asp?filename=tryhtml_table_intro*/
+			div.tablecontainer{
+				float:left;
+				width: 49%;
+				height:26%;
+				margin-right: 1%;
+			}
+			div.tableheader{
+				float:left;
+				width: 100%;
+				height:20%;
+			}
+			div.tablecontentcontainer{
+				float:left;
+				width: 100%;
+				height:80%;
+				overflow-y:scroll;
+				overflow-x: hidden;
+				border: 1px solid #dddddd;
+			}
+			table {
+				width:100%;
+			  font-family: inherit;
+				font-size: inherit;
+			  border-collapse: collapse;
+			}
+			table.header {
+				width:97.5%;
+			}
+			td, th {
+			  border: 1px solid #dddddd;
+			  text-align: center;
+			}
+			td{
+				width:20%;
+				padding: 2px;
+			}
+			th{
+				border-top: none;
+				background-color: rgba(0,140,186,1);
+				color: white;
+				padding: 4px 8px;
+				text-align: center;
+				text-decoration: none;
+				font-weight: normal;
+				width:20%;
+				height:100%;
+				cursor: pointer;
+			}
+			tr:nth-child(even) {
+			  background-color: #eeeeee;
+			}
+			tr{
+				cursor: pointer;
+			}
+
+			div.explanation{
+				float:left;
+				width: 49%;
+				height:26%;
+				border: 1px solid #aaaaaa;
+				overflow-y:auto;
+				overflow-x:hidden;
+			}
+			div.explanationcontent{
+				float:left;
+				width:98%;
+				padding:1%;
+				display: none;
+				text-align: justify;
+			}
+
+			div.about{
+				float:left;
+				width:57%;
+				padding:1%;
+				margin-top:1%;
+				margin-left: 20%;
+				margin-right: 20%;
+				border: 1px solid #aaaaaa;
+				text-align: justify;
+			}
+			span.abouttitle{
+				font-size: 14px;
+				font-weight: bold;
+			}
+
+			/* only for summary table which only has 4 columns instead of 5 */
+			th.thsum{
+				width:25%;
+			}
+			td.tdsum{
+				width:25%;
+			}
+
+			/* only for table inside the explanation */
+			td.inexplanation, th.inexplanation {
+			  border: 1px solid black;
+			  text-align: center;
+			  padding: 0;
+			  height:16px;
+			  font-size: 12px;
+			}
+			th.inexplanation{
+				border: 1px solid black;
+				background-color: white;
+				color: black;
+				width:20%;
+				cursor: none;
+				font-weight:bold;
+			}
+			tr.inexplanation:nth-child(even) {
+			  background-color: white;
+			}
+			tr.inexplanation{
+				cursor: default;
+				padding: 0;
+				height:16px;
+				font-size: 12px;
+			}
+			img.sortpic{
+				float:right;
+				width:12px;
+				margin-bottom:0px;
+			}
+			
+			div.embeddiv{
+				float:left;
+				width:100%;
+				margin-bottom:10px;
+			}
+			div.embedimage{
+				float:left;
+				margin-right:20px;
+			}
+			div.embedx{
+				float:left;
+				font-size:24px;
+				margin-top:10px;
+				margin-left:5px;
+				margin-right:5px;
+			}
+			img.embedimage{
+				float:left;
+				height:50px;
+			}
+			a.embedbutton{
+				font-size:16px;
+				border:none;
+				outline: none;
+				float: left;
+				cursor: pointer;
+				padding: 10px 20px;
+				padding-bottom:0px;
+				height:30px;
+				transition: 0.3s;
+				background-color: rgba(0,140,186,1);
+				color: white;
+				margin-top:5px;
+				text-decoration: none;
+			}
+			a.embedbutton:hover {
+			  background-color: rgba(20,160,206,1);
+			}
+			a.embedactive {
+			  background-color: rgba(40,180,226,1);
+			}
+			hr{
+				margin-bottom:10px;
+			}
+			
+			div.header{
+				float:left;
+				font-size:20px;
+				font-weight:bold;
+				margin-top:15px;
+			}
+
+		</style>
+	</head>
+	<body onload="construct()">
+		<div class="settingpanel">
+			<div class="embeddiv"> 
+				<div class="embedimage">
+					<img class="embedimage" src="strange_html_layout_additional_files/logo.png" alt="logo STRANGE">
+				</div>
+				<div class="header"> Comparison of @codepath1 and @codepath2</div>
+			</div>
+			<hr />
+
+			<div class="tab">
+			  <button id="origbutton" class="tablinks" onclick="openTab(event, 'orig', 'origtablecontent')">HTML</button>
+			  <button class="tablinks" onclick="openTab(event, 'jsorig', 'jsorigtablecontent')">JavaScript</button>
+			  <button class="tablinks" onclick="openTab(event, 'cssorig', 'cssorigtablecontent')">CSS</button>
+			  <button class="tablinks" onclick="window.open('index.html', '_self');">Back</button>
+			</div>
+		</div>
+		<div id="orig" class="tabcontent">
+			<span class="infotitle"> Similarity information: </span>
+			<span class="infotitle"> Explanation: </span>
+			<div class="tablecontainer">
+				<div class="tableheader">
+					<table class="header">
+						<tr>
+							<th onclick="sortTable(0,'origtablecontent',false, 'origcontainer')" >ID <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(1,'origtablecontent',true, 'origcontainer')">Left code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(2,'origtablecontent',true, 'origcontainer')">Right code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(3,'origtablecontent',true, 'origcontainer')">Min length <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(4,'origtablecontent',true, 'origcontainer')">Matched tokens <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+						</tr>
+					</table>
+				</div>
+				<div class="tablecontentcontainer" id="origcontainer">
+					<table id="origtablecontent">
+@tablecontent
+					</table>
+				</div>
+			</div>
+			<div class="explanation">
+@explanation
+			</div>
+			<div class="codeview">
+				<pre class="prettyprint linenums">
+@code1
+				</pre>
+			</div>
+			<div class="codeview">
+				<pre class="prettyprint linenums">
+@code2
+				</pre>
+			</div>
+		</div>
+
+		<div id="jsorig" class="tabcontent">
+			<span class="infotitle"> Similarity information: </span>
+			<span class="infotitle"> Explanation: </span>
+			<div class="tablecontainer">
+				<div class="tableheader">
+					<table class="header">
+						<tr>
+							<th onclick="sortTable(0,'jsorigtablecontent',false, 'jsorigcontainer')" >ID <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(1,'jsorigtablecontent',true, 'jsorigcontainer')">Left code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(2,'jsorigtablecontent',true, 'jsorigcontainer')">Right code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(3,'jsorigtablecontent',true, 'jsorigcontainer')">Min length <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(4,'jsorigtablecontent',true, 'jsorigcontainer')">Matched tokens <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+						</tr>
+					</table>
+				</div>
+				<div class="tablecontentcontainer" id="jsorigcontainer">
+					<table id="jsorigtablecontent">
+@jstablecontent
+					</table>
+				</div>
+			</div>
+			<div class="explanation">
+@jsexplanation
+			</div>
+			<div class="codeview">
+				<pre class="prettyprint linenums">
+@jscode1
+				</pre>
+			</div>
+			<div class="codeview">
+				<pre class="prettyprint linenums">
+@jscode2
+				</pre>
+			</div>
+		</div>
+		
+		<div id="cssorig" class="tabcontent">
+			<span class="infotitle"> Similarity information: </span>
+			<span class="infotitle"> Explanation: </span>
+			<div class="tablecontainer">
+				<div class="tableheader">
+					<table class="header">
+						<tr>
+							<th onclick="sortTable(0,'cssorigtablecontent',false, 'cssorigcontainer')" >ID <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(1,'cssorigtablecontent',true, 'cssorigcontainer')">Left code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(2,'cssorigtablecontent',true, 'cssorigcontainer')">Right code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(3,'cssorigtablecontent',true, 'cssorigcontainer')">Min length <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(4,'cssorigtablecontent',true, 'cssorigcontainer')">Matched tokens <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+						</tr>
+					</table>
+				</div>
+				<div class="tablecontentcontainer" id="cssorigcontainer">
+					<table id="cssorigtablecontent">
+@csstablecontent
+					</table>
+				</div>
+			</div>
+			<div class="explanation">
+@cssexplanation
+			</div>
+			<div class="codeview">
+				<pre class="prettyprint linenums">
+@csscode1
+				</pre>
+			</div>
+			<div class="codeview">
+				<pre class="prettyprint linenums">
+@csscode2
+				</pre>
+			</div>
+		</div>
+	</body>
+</html>

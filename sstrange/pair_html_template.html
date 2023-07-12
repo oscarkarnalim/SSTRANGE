@@ -546,7 +546,6 @@
 
 			<div class="tab">
 			  <button id="origbutton" class="tablinks" onclick="openTab(event, 'orig', 'origtablecontent')">Raw</button>
-			  <button class="tablinks" onclick="openTab(event, 'syntaxonly', 'syontablecontent')">Syntax only</button>
 			  <button class="tablinks" onclick="window.open('index.html', '_self');">Back</button>
 			</div>
 		</div>
@@ -584,43 +583,6 @@
 @code2
 				</pre>
 			</div>
-		</div>
-
-		<div id="syntaxonly" class="tabcontent">
-			<span class="infotitle"> Similarity information: </span>
-			<span class="infotitle"> Explanation: </span>
-			<div class="tablecontainer">
-				<div class="tableheader">
-					<table class="header">
-						<tr>
-							<th onclick="sortTable(0,'syontablecontent',false, 'syoncontainer')" >ID <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(1,'syontablecontent',true, 'syoncontainer')">Left code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(2,'syontablecontent',true, 'syoncontainer')">Right code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(3,'syontablecontent',true, 'syoncontainer')">Min length <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-							<th onclick="sortTable(4,'syontablecontent',true, 'syoncontainer')">Matched tokens <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
-						</tr>
-					</table>
-				</div>
-				<div class="tablecontentcontainer" id="syoncontainer">
-					<table id="syontablecontent">
-@syontablecontent
-					</table>
-				</div>
-			</div>
-			<div class="explanation">
-@syonexplanation
-			</div>
-			<div class="codeview">
-				<pre class="prettyprint linenums">
-@syoncode1
-				</pre>
-			</div>
-			<div class="codeview">
-				<pre class="prettyprint linenums">
-@syoncode2
-				</pre>
-			</div>
-		</div>
 		</div>
 	</body>
 </html>

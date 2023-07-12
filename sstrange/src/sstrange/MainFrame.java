@@ -1,6 +1,7 @@
 package sstrange;
 
 import java.awt.Desktop;
+import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.SystemColor;
@@ -32,6 +33,7 @@ public class MainFrame extends JFrame {
 	private String helpURL = "https://github.com/oscarkarnalim/sstrange";
 
 	public static String pairTemplatePath = "pair_html_template.html";
+	public static String pairWebTemplatePath = "pair_html_template_web.html";
 	public static String indexTemplatePath = "core_html_template.html";
 	public static String javaAdditionalKeywords = "java_keywords.txt";
 	public static String pyAdditionalKeywords = "python_keywords.txt";
@@ -48,11 +50,14 @@ public class MainFrame extends JFrame {
 	private JComboBox progLangField;
 	private JComboBox humanLangField;
 	private JTextField maxPairsField;
+	private JButton proceedBtn;
 
 	/**
 	 * Launch the application.
 	 */
-	public static void main(String[] args) {	
+	public static void main(String[] args) {
+//		args = new String[] {"C:\\Users\\oscar\\Desktop\\06_LAB_PYTHON", "zip", "py", "id", "40", "10", "10", "none", "true", "minhash", "C:\\Users\\oscar\\eclipse-workspace\\sstrange", "2", "1"};
+//		
 		// if args has arguments, execute as a library
 		if (args.length > 0) {
 			executeConsole(args);
@@ -135,7 +140,8 @@ public class MainFrame extends JFrame {
 		contentPane.add(submissionTypeField);
 
 		progLangField = new JComboBox();
-		progLangField.setModel(new DefaultComboBoxModel(new String[] { "Java", "Python" }));
+		progLangField.setModel(
+				new DefaultComboBoxModel(new String[] { "Java", "Python", "C#", "Dart", "Web (HTML with JS and CSS)" }));
 		progLangField.setFont(new Font("Times New Roman", Font.PLAIN, 14));
 		progLangField.setBounds(250, 120, 249, 30);
 		contentPane.add(progLangField);
@@ -228,15 +234,15 @@ public class MainFrame extends JFrame {
 		lblReportedSimilarities.setBounds(20, 470, 178, 30);
 		contentPane.add(lblReportedSimilarities);
 
-		JButton btnNewButton_2 = new JButton("Proceed");
-		btnNewButton_2.addActionListener(new ActionListener() {
+		proceedBtn = new JButton("Proceed");
+		proceedBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				submit();
 			}
 		});
-		btnNewButton_2.setFont(new Font("Times New Roman", Font.PLAIN, 14));
-		btnNewButton_2.setBounds(20, 520, 120, 30);
-		contentPane.add(btnNewButton_2);
+		proceedBtn.setFont(new Font("Times New Roman", Font.PLAIN, 14));
+		proceedBtn.setBounds(20, 520, 120, 30);
+		contentPane.add(proceedBtn);
 
 		JButton btnNewButton_2_1 = new JButton("Refresh");
 		btnNewButton_2_1.addActionListener(new ActionListener() {
@@ -357,6 +363,15 @@ public class MainFrame extends JFrame {
 				templateDirPath = path;
 		}
 
+		// if not java and python but use template code, display an error message
+		if (templateDirPath.length() > 0 && !(progLangField.getSelectedItem().toString().equals("Java")
+				|| progLangField.getSelectedItem().toString().equals("Python")))
+			errorMessage += "The template code removal currently works on Java or Python only\n";
+		
+		if(commonCodeField.getSelectedIndex() == 1 && !(progLangField.getSelectedItem().toString().equals("Java")
+				|| progLangField.getSelectedItem().toString().equals("Python")))
+				errorMessage += "The common code removal currently works on Java or Python only\n";
+
 		int simThreshold = 0;
 		String text = simThresholdField.getText();
 		try {
@@ -425,6 +440,12 @@ public class MainFrame extends JFrame {
 
 			// notification to wait
 			JOptionPane.showMessageDialog(this, "Please wait till another pop-up appears!");
+			// disable proceed button
+			proceedBtn.setEnabled(false);
+			proceedBtn.setText("Processing...");
+			revalidate();
+			repaint();
+
 			// start processing
 			String resultPath = process(assignmentPath, submissionTypeField.getSelectedItem().toString(),
 					progLangField.getSelectedItem().toString(), humanLang, simThreshold, maxPairs, minMatchLength,
@@ -440,7 +461,17 @@ public class MainFrame extends JFrame {
 				// notify user that the process has been completed
 				JOptionPane.showMessageDialog(this,
 						"The comparison process is completed\nThe report link has been copied to the clipboard\nSimply paste it in a web browser");
+			} else {
+				// notify user that errors occurred
+				JOptionPane.showMessageDialog(this,
+						"Error(s) occurred; kindly check the parameters and the input files");
 			}
+
+			// enable proceed button
+			proceedBtn.setEnabled(true);
+			proceedBtn.setText("Proceed");
+			revalidate();
+			repaint();
 		}
 
 	}
@@ -482,8 +513,14 @@ public class MainFrame extends JFrame {
 			progLang = "Java";
 		else if (rawProgLang.equalsIgnoreCase("py"))
 			progLang = "Python";
+		else if (rawProgLang.equalsIgnoreCase("web"))
+			progLang = "Web (HTML with JS and CSS)";
+		else if (rawProgLang.equalsIgnoreCase("dart"))
+			progLang = "Dart";
+		else if (rawProgLang.equalsIgnoreCase("csharp"))
+			progLang = "C#";
 		else
-			errorMessage += "3rd argument: the programming language should be either \"java\" or \"py\"\n";
+			errorMessage += "3rd argument: the programming language should be either \"java\", \"py\", \"csharp\", \"web\", or \"dart\"\n";
 
 		String humanLang = "";
 		String rawHumanLang = args[3];
@@ -541,6 +578,11 @@ public class MainFrame extends JFrame {
 				templateDirPath = path;
 		}
 
+		// if not java and python but use template code, display an error message
+		if (templateDirPath.length() > 0 && !(progLang.equals("Java") || progLang.equals("Python")))
+			errorMessage += "8th argument: the template code removal currently works on Java or Python only\n";
+
+
 		boolean isCommonCodeAllowed = false;
 		text = args[8];
 		try {
@@ -549,6 +591,9 @@ public class MainFrame extends JFrame {
 			// if not parsed correctly, the input is not boolean
 			errorMessage += "9th argument: the common code status should be either \"true\" or \"false\"\n";
 		}
+		
+		if(isCommonCodeAllowed == false && !(progLang.equals("Java") || progLang.equals("Python")))
+				errorMessage += "9th argument: the common code removal currently works on Java or Python only\n";
 
 		String similarityMeasurementType = "";
 		String rawSimilarityMeasurementType = args[9];
@@ -572,6 +617,7 @@ public class MainFrame extends JFrame {
 			errorMessage += "11th argument: the assignment path does not exist\n";
 
 		pairTemplatePath = resourcePath + File.separator + pairTemplatePath;
+		pairWebTemplatePath = resourcePath + File.separator + pairWebTemplatePath;
 		indexTemplatePath = resourcePath + File.separator + indexTemplatePath;
 		additional_dir_path = resourcePath + File.separator + additional_dir_path;
 		javaAdditionalKeywords = resourcePath + File.separator + javaAdditionalKeywords;
@@ -631,22 +677,26 @@ public class MainFrame extends JFrame {
 	public static String process(String assignmentPath, String submissionType, String progLang, String humanLang,
 			int simThreshold, int maxPairs, int minMatchingLength, String templateDirPath, boolean isCommonCodeAllowed,
 			String similarityMeasurement, int numClusters, int numStages) {
+		
+		
 
 		ArrayList<File> filesToBeDeleted = new ArrayList<File>();
 
 		File assignmentFile = new File(assignmentPath);
 		String assignmentParentDirPath = assignmentFile.getParentFile().getAbsolutePath();
 		String assignmentName = assignmentFile.getName();
-		String additionalKeywordsPath = null;
 
-		// if the programming language is either java or python, set it to STRANGE's
-		// format
+		// rename programming language to its file extensions
 		if (progLang.equals("Java") || progLang.equals("java")) {
 			progLang = "java";
-			additionalKeywordsPath = "java_keywords.txt";
 		} else if (progLang.equals("Python") || progLang.equals("py")) {
 			progLang = "py";
-			additionalKeywordsPath = "python_keywords.txt";
+		} else if (progLang.equals("Web (HTML with JS and CSS)") || progLang.equals("html")) {
+			progLang = "html";
+		} else if (progLang.equals("Dart") || progLang.equals("dart")) {
+			progLang = "dart";
+		}else if (progLang.equals("C#") || progLang.equals("csharp")) {
+			progLang = "cs";
 		}
 
 		// if zip, unzip first
@@ -662,15 +712,24 @@ public class MainFrame extends JFrame {
 		if (submissionType.startsWith("Multiple files"))
 			isMultipleFiles = true;
 
+		
+		long before = System.nanoTime();
 		// do the comparison
-		FastComparer.doSyntacticComparison(assignmentPath, progLang, humanLang, simThreshold, minMatchingLength,
-				maxPairs, templateDirPath, similarityMeasurement, assignmentFile, assignmentParentDirPath,
-				assignmentName, isMultipleFiles, isCommonCodeAllowed, additionalKeywordsPath, filesToBeDeleted,
-				numClusters, numStages);
+		if (progLang.equalsIgnoreCase("html"))
+			// exclusive for web as it handles js and css also
+			FastComparerWeb.doSyntacticComparison(assignmentPath, humanLang, simThreshold, minMatchingLength, maxPairs,
+					templateDirPath, similarityMeasurement, assignmentFile, assignmentParentDirPath, assignmentName,
+					isMultipleFiles, isCommonCodeAllowed, filesToBeDeleted, numClusters, numStages);
+		else
+			FastComparer.doSyntacticComparison(assignmentPath, progLang, humanLang, simThreshold, minMatchingLength,
+					maxPairs, templateDirPath, similarityMeasurement, assignmentFile, assignmentParentDirPath,
+					assignmentName, isMultipleFiles, isCommonCodeAllowed, filesToBeDeleted, numClusters, numStages);
 
 		// start deleting all files
 		for (File f : filesToBeDeleted)
 			FileManipulator.deleteAllTemporaryFiles(f);
+		
+		System.out.println("procesing time: " + (System.nanoTime() - before));
 
 		return assignmentParentDirPath + File.separator + "[out] " + assignmentName + File.separator + "index.html";
 

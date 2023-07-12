@@ -10,8 +10,10 @@ import java.util.Map.Entry;
 import info.debatty.java.lsh.LSHMinHash;
 import info.debatty.java.lsh.LSHSuperBit;
 import sstrange.htmlgenerator.CodeReader;
+import sstrange.language.HtmlGenerator;
+import sstrange.language.csharp.CSharpFeedbackGenerator;
+import sstrange.language.dart.DartFeedbackGenerator;
 import sstrange.language.java.JavaFeedbackGenerator;
-import sstrange.language.java.JavaHtmlGenerator;
 import sstrange.language.python.PythonFeedbackGenerator;
 import sstrange.language.python.PythonHtmlGenerator;
 import sstrange.lshcalculator.CosineCalculator;
@@ -21,8 +23,6 @@ import sstrange.matchgenerator.ComparisonPairTuple;
 import sstrange.matchgenerator.MatchGenerator;
 import sstrange.message.FeedbackMessageGenerator;
 import sstrange.token.FeedbackToken;
-import sstrange.token.FeedbackTokenComparator;
-import support.AdditionalKeywordsManager;
 import support.stringmatching.GSTMatchTuple;
 
 public class FastComparer {
@@ -30,7 +30,7 @@ public class FastComparer {
 	public static ArrayList<ComparisonPairTuple> doSyntacticComparison(String assignmentPath, String progLang,
 			String humanLang, int simThreshold, int minMatchingLength, int maxPairs, String templateDirPath,
 			String similarityMeasurement, File assignmentFile, String assignmentParentDirPath, String assignmentName,
-			boolean isMultipleFiles, boolean isCommonCodeAllowed, String additionalKeywordsPath,
+			boolean isMultipleFiles, boolean isCommonCodeAllowed, 
 			ArrayList<File> filesToBeDeleted, int numClusters, int numStages) {
 
 		// if multiple files, merge them
@@ -42,27 +42,31 @@ public class FastComparer {
 			filesToBeDeleted.add(new File(newAssignmentPath));
 		}
 
-		// remove common and template code for java and python if needed
-		assignmentPath = JavaPyCommonTemplateRemover.removeCommonAndTemplateCodeJavaPython(assignmentPath,
-				minMatchingLength, templateDirPath, isCommonCodeAllowed, progLang, assignmentParentDirPath,
-				assignmentName, filesToBeDeleted, additionalKeywordsPath);
 
-		// get additional keywords for STRANGE
-		ArrayList<ArrayList<String>> additionalKeywords = new ArrayList<ArrayList<String>>();
-		additionalKeywords = AdditionalKeywordsManager.readAdditionalKeywords(additionalKeywordsPath);
+		if (progLang.equalsIgnoreCase("java") || progLang.equalsIgnoreCase("py")) {
+			/*
+			 * For now, these only work on Java and Python
+			 */
+			
+			// remove common and template code for java and python if needed
+			assignmentPath = JavaPyCommonTemplateRemover.removeCommonAndTemplateCodeJavaPython(assignmentPath,
+					minMatchingLength, templateDirPath, isCommonCodeAllowed, progLang, assignmentParentDirPath,
+					assignmentName, filesToBeDeleted);
+		}
+		
 		// set result dir based on the name of assignment
 		String resultPath = assignmentParentDirPath + File.separator + "[out] " + assignmentName;
 
 		// generate STRANGE reports
 		return compareAndGenerateHTMLReports(assignmentPath, resultPath, progLang, humanLang, simThreshold,
-				minMatchingLength, maxPairs, humanLang, additionalKeywords, similarityMeasurement, numClusters,
+				minMatchingLength, maxPairs, humanLang,  similarityMeasurement, numClusters,
 				numStages);
 
 	}
 
 	private static ArrayList<ComparisonPairTuple> compareAndGenerateHTMLReports(String dirPath, String resultPath,
 			String progLang, String humanLang, int simThreshold, int minMatchLength, int maxPairs, String languageCode,
-			ArrayList<ArrayList<String>> additionalKeywords, String similarityMeasurement, int numClusters,
+			 String similarityMeasurement, int numClusters,
 			int numStages) {
 		// create the output dir
 		File resultDir = new File(resultPath);
@@ -72,7 +76,6 @@ public class FastComparer {
 
 		// tokenise all programs and generate the indexes
 		ArrayList<ArrayList<FeedbackToken>> tokenStrings = new ArrayList<ArrayList<FeedbackToken>>();
-		ArrayList<ArrayList<FeedbackToken>> rawTokenStrings = new ArrayList<ArrayList<FeedbackToken>>();
 		ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes = new ArrayList<HashMap<String, ArrayList<Integer>>>();
 		for (int i = 0; i < assignments.length; i++) {
 			// for each code, tokenise and generalise
@@ -83,40 +86,31 @@ public class FastComparer {
 				tokenIndexes.add(new HashMap<String, ArrayList<Integer>>());
 			} else {
 				// generate token string
-				ArrayList<FeedbackToken> rawTokenString = null, tokenString = null;
+				ArrayList<FeedbackToken> tokenString = null;
 
 				if (progLang.equals("java")) {
-					rawTokenString = JavaFeedbackGenerator.generateFeedbackTokenString(code.getAbsolutePath());
-					JavaFeedbackGenerator.mergeAdjacentCommentsOnTokenString(rawTokenString);
-
-					tokenString = JavaFeedbackGenerator.syntaxTokenStringPreprocessing(rawTokenString,
-							additionalKeywords);
+					tokenString = JavaFeedbackGenerator.generateFeedbackTokenString(code.getAbsolutePath());
+					tokenString = JavaFeedbackGenerator.syntaxTokenStringPreprocessing(tokenString);
 				} else if (progLang.equals("py")) {
-					rawTokenString = new ArrayList<>();
 					tokenString = PythonFeedbackGenerator.generateSyntaxTokenString(code.getAbsolutePath());
-					rawTokenString.addAll(tokenString);
-					ArrayList<FeedbackToken> commentWhitespaceString = PythonFeedbackGenerator
-							.generateCommentAndWhitespaceTokens(code.getAbsolutePath());
-					rawTokenString.addAll(commentWhitespaceString);
-					Collections.sort(rawTokenString, new FeedbackTokenComparator());
-					PythonFeedbackGenerator.mergeAdjacentCommentsAndWhitespacesOnTokenString(rawTokenString);
-
-					PythonFeedbackGenerator.syntaxTokenStringPreprocessing(tokenString, additionalKeywords);
+					PythonFeedbackGenerator.syntaxTokenStringPreprocessing(tokenString);
+				}else if (progLang.equals("dart")) {
+					tokenString = DartFeedbackGenerator.generateFeedbackTokenString(code.getAbsolutePath());
+					tokenString = DartFeedbackGenerator.syntaxTokenStringPreprocessing(tokenString);
+				}else if (progLang.equals("cs")) {
+					tokenString = CSharpFeedbackGenerator.generateFeedbackTokenString(code.getAbsolutePath());
+					tokenString = CSharpFeedbackGenerator.syntaxTokenStringPreprocessing(tokenString);
 				}
 
-				// add the token string and its raw form
+				// add the token string
 				tokenStrings.add(tokenString);
-				rawTokenStrings.add(rawTokenString);
 
-				// if not RKRGST
-				if (similarityMeasurement.equalsIgnoreCase("RKRGST") == false) {
-					// generate the index
-					HashMap<String, ArrayList<Integer>> tokenIndex = IndexGenerator.generateIndex(tokenString,
-							minMatchLength);
+				// generate the index
+				HashMap<String, ArrayList<Integer>> tokenIndex = IndexGenerator.generateIndex(tokenString,
+						minMatchLength);
 
-					// add the token index
-					tokenIndexes.add(tokenIndex);
-				}
+				// add the token index
+				tokenIndexes.add(tokenIndex);
 			}
 		}
 
@@ -125,37 +119,35 @@ public class FastComparer {
 			ArrayList<String> vectorHeader = IndexGenerator.generateVectorHeader(tokenIndexes);
 
 			// calculate minhash
-			return _compareAndGenerateHTMLReportsMinHash(assignments, tokenStrings, rawTokenStrings, tokenIndexes,
+			return _compareAndGenerateHTMLReportsMinHash(assignments, tokenStrings, tokenIndexes,
 					vectorHeader, dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs,
-					languageCode, additionalKeywords, numClusters, numStages);
+					languageCode, numClusters, numStages);
 		} else if (similarityMeasurement.equalsIgnoreCase("Super-Bit")) {
 			// generate vector header
 			ArrayList<String> vectorHeader = IndexGenerator.generateVectorHeader(tokenIndexes);
 
 			// calculate super-bit
-			return _compareAndGenerateHTMLReportsSuoerBit(assignments, tokenStrings, rawTokenStrings, tokenIndexes,
+			return _compareAndGenerateHTMLReportsSuoerBit(assignments, tokenStrings, tokenIndexes,
 					vectorHeader, dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs,
-					languageCode, additionalKeywords, numClusters, numStages);
+					languageCode, numClusters, numStages);
 		} else if (similarityMeasurement.equalsIgnoreCase("Jaccard")) {
-			return _compareAndGenerateHTMLReportsJaccard(assignments, tokenStrings, rawTokenStrings, tokenIndexes,
-					dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs, languageCode,
-					additionalKeywords);
+			return _compareAndGenerateHTMLReportsJaccard(assignments, tokenStrings, tokenIndexes,
+					dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs, languageCode);
 		} else if (similarityMeasurement.equalsIgnoreCase("Cosine")) {
-			return _compareAndGenerateHTMLReportsCosine(assignments, tokenStrings, rawTokenStrings, tokenIndexes,
-					dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs, languageCode,
-					additionalKeywords);
+			return _compareAndGenerateHTMLReportsCosine(assignments, tokenStrings, tokenIndexes,
+					dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs, languageCode);
 		} else {
 			// RKRGST
-			return _compareAndGenerateHTMLReportsRKRGST(assignments, tokenStrings, rawTokenStrings, dirPath, resultPath,
-					progLang, humanLang, simThreshold, minMatchLength, maxPairs, languageCode, additionalKeywords);
+			return _compareAndGenerateHTMLReportsRKRGST(assignments, tokenStrings,  dirPath, resultPath,
+					progLang, humanLang, simThreshold, minMatchLength, maxPairs, languageCode);
 		}
 
 	}
 
 	private static ArrayList<ComparisonPairTuple> _compareAndGenerateHTMLReportsRKRGST(File[] assignments,
-			ArrayList<ArrayList<FeedbackToken>> tokenStrings, ArrayList<ArrayList<FeedbackToken>> rawTokenStrings,
+			ArrayList<ArrayList<FeedbackToken>> tokenStrings, 
 			String dirPath, String resultPath, String progLang, String humanLang, int simThreshold, int minMatchLength,
-			int maxPairs, String languageCode, ArrayList<ArrayList<String>> additionalKeywords) {
+			int maxPairs, String languageCode) {
 		// RKRGST
 		try {
 			// to store the result
@@ -209,21 +201,17 @@ public class FastComparer {
 				// set the path to comparison pair tuple
 				ct.setResultedHTMLFilename(syntacticFilename);
 
-				if (progLang.equals("java")) {
-					JavaHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							rawTokenStrings.get(ct.getSubmissionID1()), rawTokenStrings.get(ct.getSubmissionID2()),
-							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							additionalKeywords, ct.getMatches());
-				} else if (progLang.equals("py")) {
+				if (progLang.equals("py")) {
 					PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
 							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							rawTokenStrings.get(ct.getSubmissionID1()), rawTokenStrings.get(ct.getSubmissionID2()),
 							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							additionalKeywords, ct.getMatches());
-				}
+							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang, ct.getMatches());
+				}else{
+					HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
+							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,ct.getMatches());
+				} 
 			}
 
 			// generate the index HTML
@@ -241,10 +229,9 @@ public class FastComparer {
 	}
 
 	private static ArrayList<ComparisonPairTuple> _compareAndGenerateHTMLReportsJaccard(File[] assignments,
-			ArrayList<ArrayList<FeedbackToken>> tokenStrings, ArrayList<ArrayList<FeedbackToken>> rawTokenStrings,
+			ArrayList<ArrayList<FeedbackToken>> tokenStrings,
 			ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes, String dirPath, String resultPath,
-			String progLang, String humanLang, int simThreshold, int minMatchLength, int maxPairs, String languageCode,
-			ArrayList<ArrayList<String>> additionalKeywords) {
+			String progLang, String humanLang, int simThreshold, int minMatchLength, int maxPairs, String languageCode) {
 		// Jaccard
 		try {
 			// to store the result
@@ -298,21 +285,17 @@ public class FastComparer {
 				// set the path to comparison pair tuple
 				ct.setResultedHTMLFilename(syntacticFilename);
 
-				if (progLang.equals("java")) {
-					JavaHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							rawTokenStrings.get(ct.getSubmissionID1()), rawTokenStrings.get(ct.getSubmissionID2()),
-							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							additionalKeywords, ct.getMatches());
-				} else if (progLang.equals("py")) {
+				if (progLang.equals("py")) {
 					PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
 							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							rawTokenStrings.get(ct.getSubmissionID1()), rawTokenStrings.get(ct.getSubmissionID2()),
 							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							additionalKeywords, ct.getMatches());
-				}
+							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang, ct.getMatches());
+				}else{
+					HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
+							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,ct.getMatches());
+				} 
 			}
 
 			// generate the index HTML
@@ -329,10 +312,9 @@ public class FastComparer {
 	}
 
 	private static ArrayList<ComparisonPairTuple> _compareAndGenerateHTMLReportsCosine(File[] assignments,
-			ArrayList<ArrayList<FeedbackToken>> tokenStrings, ArrayList<ArrayList<FeedbackToken>> rawTokenStrings,
+			ArrayList<ArrayList<FeedbackToken>> tokenStrings,
 			ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes, String dirPath, String resultPath,
-			String progLang, String humanLang, int simThreshold, int minMatchLength, int maxPairs, String languageCode,
-			ArrayList<ArrayList<String>> additionalKeywords) {
+			String progLang, String humanLang, int simThreshold, int minMatchLength, int maxPairs, String languageCode) {
 		// Jaccard
 		try {
 			// to store the result
@@ -386,21 +368,17 @@ public class FastComparer {
 				// set the path to comparison pair tuple
 				ct.setResultedHTMLFilename(syntacticFilename);
 
-				if (progLang.equals("java")) {
-					JavaHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							rawTokenStrings.get(ct.getSubmissionID1()), rawTokenStrings.get(ct.getSubmissionID2()),
-							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							additionalKeywords, ct.getMatches());
-				} else if (progLang.equals("py")) {
+				if (progLang.equals("py")) {
 					PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
 							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							rawTokenStrings.get(ct.getSubmissionID1()), rawTokenStrings.get(ct.getSubmissionID2()),
 							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							additionalKeywords, ct.getMatches());
-				}
+							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang, ct.getMatches());
+				}else{
+					HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
+							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,ct.getMatches());
+				} 
 			}
 
 			// generate the index HTML
@@ -417,10 +395,10 @@ public class FastComparer {
 	}
 
 	private static ArrayList<ComparisonPairTuple> _compareAndGenerateHTMLReportsMinHash(File[] assignments,
-			ArrayList<ArrayList<FeedbackToken>> tokenStrings, ArrayList<ArrayList<FeedbackToken>> rawTokenStrings,
+			ArrayList<ArrayList<FeedbackToken>> tokenStrings, 
 			ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes, ArrayList<String> vectorHeader, String dirPath,
 			String resultPath, String progLang, String humanLang, int simThreshold, int minMatchLength, int maxPairs,
-			String languageCode, ArrayList<ArrayList<String>> additionalKeywords, int numClusters, int numStages) {
+			String languageCode, int numClusters, int numStages) {
 		// MinHash algorithm
 
 		try {
@@ -495,7 +473,7 @@ public class FastComparer {
 				// get the sim degree
 				int simDegree = (int) (MatchGenerator.calcAverageSimilarity(matches,
 						tokenStrings.get(submissionID1).size(), tokenStrings.get(submissionID2).size()) * 100);
-
+				
 				if (simDegree >= simThreshold) {
 					String dirname1 = assignments[submissionID1].getName();
 					String dirname2 = assignments[submissionID2].getName();
@@ -534,21 +512,17 @@ public class FastComparer {
 				// set the path to comparison pair tuple
 				ct.setResultedHTMLFilename(syntacticFilename);
 
-				if (progLang.equals("java")) {
-					JavaHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							rawTokenStrings.get(ct.getSubmissionID1()), rawTokenStrings.get(ct.getSubmissionID2()),
-							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							additionalKeywords, ct.getMatches());
-				} else if (progLang.equals("py")) {
+				if (progLang.equals("py")) {
 					PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
 							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							rawTokenStrings.get(ct.getSubmissionID1()), rawTokenStrings.get(ct.getSubmissionID2()),
 							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							additionalKeywords, ct.getMatches());
-				}
+							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang, ct.getMatches());
+				}else{
+					HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
+							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,ct.getMatches());
+				} 
 			}
 
 			// generate the index HTML
@@ -565,10 +539,10 @@ public class FastComparer {
 	}
 
 	private static ArrayList<ComparisonPairTuple> _compareAndGenerateHTMLReportsSuoerBit(File[] assignments,
-			ArrayList<ArrayList<FeedbackToken>> tokenStrings, ArrayList<ArrayList<FeedbackToken>> rawTokenStrings,
+			ArrayList<ArrayList<FeedbackToken>> tokenStrings, 
 			ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes, ArrayList<String> vectorHeader, String dirPath,
 			String resultPath, String progLang, String humanLang, int simThreshold, int minMatchLength, int maxPairs,
-			String languageCode, ArrayList<ArrayList<String>> additionalKeywords, int numClusters, int numStages) {
+			String languageCode,  int numClusters, int numStages) {
 		// Super-Bit algorithm
 		try {
 			// to store the result
@@ -681,21 +655,17 @@ public class FastComparer {
 				// set the path to comparison pair tuple
 				ct.setResultedHTMLFilename(syntacticFilename);
 
-				if (progLang.equals("java")) {
-					JavaHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							rawTokenStrings.get(ct.getSubmissionID1()), rawTokenStrings.get(ct.getSubmissionID2()),
-							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							additionalKeywords, ct.getMatches());
-				} else if (progLang.equals("py")) {
+				if (progLang.equals("py")) {
 					PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
 							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							rawTokenStrings.get(ct.getSubmissionID1()), rawTokenStrings.get(ct.getSubmissionID2()),
 							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							additionalKeywords, ct.getMatches());
-				}
+							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang, ct.getMatches());
+				}else{
+					HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
+							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,ct.getMatches());
+				} 
 			}
 
 			// generate the index HTML

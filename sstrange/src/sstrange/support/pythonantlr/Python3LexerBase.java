@@ -1,12 +1,8 @@
 package sstrange.support.pythonantlr;
 
-
 import org.antlr.v4.runtime.*;
 
 abstract class Python3LexerBase extends Lexer {
-    protected Python3LexerBase(CharStream input) {
-        super(input);
-    }
     // A queue where extra tokens are pushed on (see the NEWLINE lexer rule).
     private java.util.LinkedList<Token> tokens = new java.util.LinkedList<>();
     // The stack that keeps track of the indentation level.
@@ -15,6 +11,11 @@ abstract class Python3LexerBase extends Lexer {
     private int opened = 0;
     // The most recently produced token.
     private Token lastToken = null;
+
+    protected Python3LexerBase(CharStream input) {
+        super(input);
+    }
+
     @Override
     public void emit(Token t) {
         super.setToken(t);
@@ -136,5 +137,15 @@ abstract class Python3LexerBase extends Lexer {
                 }
             }
         }
+    }
+
+    @Override
+    public void reset()
+    {
+        tokens = new java.util.LinkedList<>();
+        indents = new java.util.Stack<>();
+        opened = 0;
+        lastToken = null;
+        super.reset();
     }
 }

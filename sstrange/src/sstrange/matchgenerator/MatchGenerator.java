@@ -162,7 +162,7 @@ public class MatchGenerator {
 	}
 	
 	// generate total number of matched tokens
-	private static int coverage(ArrayList<GSTMatchTuple> tiles) {
+	public static int coverage(ArrayList<GSTMatchTuple> tiles) {
 		int accu = 0;
 		for (int i = 0; i < tiles.size(); i++) {
 			GSTMatchTuple tile = tiles.get(i);
