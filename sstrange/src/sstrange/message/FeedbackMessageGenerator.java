@@ -39,16 +39,27 @@ public class FeedbackMessageGenerator {
 	}
 
 	public static ArrayList<GSTMatchTuple> generateMatchedTuples(ArrayList<FeedbackToken> tokenString1,
-			ArrayList<FeedbackToken> tokenString2, int minimumMatchLength) {
+			ArrayList<FeedbackToken> tokenString2, int minimumMatchLength, boolean isSensitive) {
 		// create array of string for both whitespace strings
 		String[] obj1 = new String[tokenString1.size()];
 		String[] obj2 = new String[tokenString2.size()];
 
-		for (int i = 0; i < tokenString1.size(); i++) {
-			obj1[i] = tokenString1.get(i).getContentForComparison();
-		}
-		for (int i = 0; i < tokenString2.size(); i++) {
-			obj2[i] = tokenString2.get(i).getContentForComparison();
+		if (isSensitive) {
+			// if sensitive mode is applied, use raw tokens
+			for (int i = 0; i < tokenString1.size(); i++) {
+				obj1[i] = tokenString1.get(i).getContent();
+			}
+			for (int i = 0; i < tokenString2.size(); i++) {
+				obj2[i] = tokenString2.get(i).getContent();
+			}
+		} else {
+			// otherwise, use the generalised one
+			for (int i = 0; i < tokenString1.size(); i++) {
+				obj1[i] = tokenString1.get(i).getContentForComparison();
+			}
+			for (int i = 0; i < tokenString2.size(); i++) {
+				obj2[i] = tokenString2.get(i).getContentForComparison();
+			}
 		}
 		// get matched tiles with RKRGST to remaining unmatched regions
 		ArrayList<GSTMatchTuple> simTuples = GreedyStringTiling.getMatchedTiles(obj1, obj2, minimumMatchLength);

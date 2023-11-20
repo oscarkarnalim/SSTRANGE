@@ -1,7 +1,6 @@
 package sstrange;
 
 import java.awt.Desktop;
-import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.SystemColor;
@@ -13,6 +12,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.net.URI;
 import java.util.ArrayList;
 
@@ -28,6 +29,10 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
+
+import sstrange.evaluation.WebEvalControlled;
+import sstrange.evaluation.WebEvalStdAsmt;
+import sstrange.matchgenerator.ComparisonPairTuple;
 
 public class MainFrame extends JFrame {
 	private String helpURL = "https://github.com/oscarkarnalim/sstrange";
@@ -55,12 +60,18 @@ public class MainFrame extends JFrame {
 	/**
 	 * Launch the application.
 	 */
-	public static void main(String[] args) {
-//		args = new String[] {"C:\\Users\\oscar\\Desktop\\06_LAB_PYTHON", "zip", "py", "id", "40", "10", "10", "none", "true", "minhash", "C:\\Users\\oscar\\eclipse-workspace\\sstrange", "2", "1"};
-//		
+	public static void main(String[] args) throws Exception {
 		// if args has arguments, execute as a library
 		if (args.length > 0) {
+			// just for code tracing in estrange
+			String prefixPath = "mcu" + File.separator;
+			File file = new File(prefixPath + "err_sstrange.txt");
+			FileOutputStream fos = new FileOutputStream(file, true);
+			PrintStream ps = new PrintStream(fos);
+			System.setErr(ps);
+
 			executeConsole(args);
+			ps.close();
 		} else {
 			// if empty, show the UI
 			EventQueue.invokeLater(new Runnable() {
@@ -140,8 +151,8 @@ public class MainFrame extends JFrame {
 		contentPane.add(submissionTypeField);
 
 		progLangField = new JComboBox();
-		progLangField.setModel(
-				new DefaultComboBoxModel(new String[] { "Java", "Python", "C#", "Dart", "Web (HTML with JS and CSS)" }));
+		progLangField.setModel(new DefaultComboBoxModel(
+				new String[] { "Java", "Python", "C#", "Dart", "Web (HTML, JS, CSS and PHP)" }));
 		progLangField.setFont(new Font("Times New Roman", Font.PLAIN, 14));
 		progLangField.setBounds(250, 120, 249, 30);
 		contentPane.add(progLangField);
@@ -172,7 +183,7 @@ public class MainFrame extends JFrame {
 		simThresholdField.setBounds(250, 221, 56, 30);
 		contentPane.add(simThresholdField);
 
-		JLabel lblMinSimThreshold = new JLabel("Minimum similarity threshold :");
+		JLabel lblMinSimThreshold = new JLabel("Min. similarity threshold :");
 		lblMinSimThreshold.setHorizontalAlignment(SwingConstants.LEFT);
 		lblMinSimThreshold.setFont(new Font("Times New Roman", Font.PLAIN, 16));
 		lblMinSimThreshold.setBounds(20, 220, 209, 30);
@@ -222,7 +233,7 @@ public class MainFrame extends JFrame {
 		minMatchLengthField.setBounds(250, 321, 56, 30);
 		contentPane.add(minMatchLengthField);
 
-		JLabel lblMinMatchingLength = new JLabel("Minimum matching length :");
+		JLabel lblMinMatchingLength = new JLabel("Min. matching length :");
 		lblMinMatchingLength.setHorizontalAlignment(SwingConstants.LEFT);
 		lblMinMatchingLength.setFont(new Font("Times New Roman", Font.PLAIN, 16));
 		lblMinMatchingLength.setBounds(20, 320, 178, 30);
@@ -263,7 +274,7 @@ public class MainFrame extends JFrame {
 		JLabel lblCommonCode = new JLabel("Common content :");
 		lblCommonCode.setHorizontalAlignment(SwingConstants.LEFT);
 		lblCommonCode.setFont(new Font("Times New Roman", Font.PLAIN, 16));
-		lblCommonCode.setBounds(20, 420, 112, 30);
+		lblCommonCode.setBounds(20, 420, 120, 30);
 		contentPane.add(lblCommonCode);
 
 		JButton btnNewButton_2_1_1 = new JButton("Help & About");
@@ -276,7 +287,7 @@ public class MainFrame extends JFrame {
 		btnNewButton_2_1_1.setBounds(420, 520, 120, 30);
 		contentPane.add(btnNewButton_2_1_1);
 
-		JLabel lblMaximumReportedProgram = new JLabel("Maximum reported submission pairs :");
+		JLabel lblMaximumReportedProgram = new JLabel("Max. reported submission pairs :");
 		lblMaximumReportedProgram.setHorizontalAlignment(SwingConstants.LEFT);
 		lblMaximumReportedProgram.setFont(new Font("Times New Roman", Font.PLAIN, 16));
 		lblMaximumReportedProgram.setBounds(20, 270, 231, 30);
@@ -291,8 +302,9 @@ public class MainFrame extends JFrame {
 		contentPane.add(maxPairsField);
 
 		similarityMeasurement = new JComboBox();
-		similarityMeasurement.setModel(
-				new DefaultComboBoxModel(new String[] { "MinHash", "Super-Bit", "Jaccard", "Cosine", "RKRGST" }));
+		similarityMeasurement.setModel(new DefaultComboBoxModel(
+				new String[] { "MinHash", "Super-Bit", "Jaccard", "Cosine", "RKRGST", "Sensitive MinHash",
+						"Sensitive Super-Bit", "Sensitive Jaccard", "Sensitive Cosine", "Sensitive RKRGST" }));
 		similarityMeasurement.setSelectedIndex(0);
 		similarityMeasurement.setFont(new Font("Times New Roman", Font.PLAIN, 14));
 		similarityMeasurement.setBounds(250, 470, 249, 30);
@@ -367,10 +379,10 @@ public class MainFrame extends JFrame {
 		if (templateDirPath.length() > 0 && !(progLangField.getSelectedItem().toString().equals("Java")
 				|| progLangField.getSelectedItem().toString().equals("Python")))
 			errorMessage += "The template code removal currently works on Java or Python only\n";
-		
-		if(commonCodeField.getSelectedIndex() == 1 && !(progLangField.getSelectedItem().toString().equals("Java")
+
+		if (commonCodeField.getSelectedIndex() == 1 && !(progLangField.getSelectedItem().toString().equals("Java")
 				|| progLangField.getSelectedItem().toString().equals("Python")))
-				errorMessage += "The common code removal currently works on Java or Python only\n";
+			errorMessage += "The common code removal currently works on Java or Python only\n";
 
 		int simThreshold = 0;
 		String text = simThresholdField.getText();
@@ -446,11 +458,28 @@ public class MainFrame extends JFrame {
 			revalidate();
 			repaint();
 
+			String rawSimilarityMeasurementType = similarityMeasurement.getSelectedItem().toString();
+			String similarityMeasurementType = "";
+			if (rawSimilarityMeasurementType.toLowerCase().endsWith("MinHash".toLowerCase()))
+				similarityMeasurementType = "MinHash";
+			else if (rawSimilarityMeasurementType.toLowerCase().endsWith("Super-Bit".toLowerCase()))
+				similarityMeasurementType = "Super-Bit";
+			else if (rawSimilarityMeasurementType.toLowerCase().endsWith("Jaccard".toLowerCase()))
+				similarityMeasurementType = "Jaccard";
+			else if (rawSimilarityMeasurementType.toLowerCase().endsWith("Cosine".toLowerCase()))
+				similarityMeasurementType = "Cosine";
+			else if (rawSimilarityMeasurementType.toLowerCase().endsWith("RKRGST".toLowerCase()))
+				similarityMeasurementType = "RKRGST";
+
+			boolean isSensitive = false;
+			if (rawSimilarityMeasurementType.toLowerCase().contains("sensitive"))
+				isSensitive = true;
+
 			// start processing
 			String resultPath = process(assignmentPath, submissionTypeField.getSelectedItem().toString(),
 					progLangField.getSelectedItem().toString(), humanLang, simThreshold, maxPairs, minMatchLength,
-					templateDirPath, commonCodeField.getSelectedIndex() == 0 ? true : false,
-					similarityMeasurement.getSelectedItem().toString(), numClusters, numStages);
+					templateDirPath, commonCodeField.getSelectedIndex() == 0 ? true : false, similarityMeasurementType,
+					numClusters, numStages, isSensitive);
 
 			if (resultPath != null) {
 				// set the clipboard
@@ -514,7 +543,7 @@ public class MainFrame extends JFrame {
 		else if (rawProgLang.equalsIgnoreCase("py"))
 			progLang = "Python";
 		else if (rawProgLang.equalsIgnoreCase("web"))
-			progLang = "Web (HTML with JS and CSS)";
+			progLang = "Web (HTML, JS, CSS and PHP)";
 		else if (rawProgLang.equalsIgnoreCase("dart"))
 			progLang = "Dart";
 		else if (rawProgLang.equalsIgnoreCase("csharp"))
@@ -570,18 +599,22 @@ public class MainFrame extends JFrame {
 		String templateDirPath = "";
 		path = args[7];
 		if (path.equals("none") == false) {
-			// check whether the path is not valid
-			f = new File(path);
-			if (f.exists() == false)
-				errorMessage += "8th argument: the template directory path does not exist\n";
-			else
-				templateDirPath = path;
+			// if not java nor python, ignore template directory path
+			if (progLang != "Java" && progLang != "Python") {
+				errorMessage += "8th argument: the template directory path should be \"none\"; it is only supported for Java and Python\n";
+			} else {
+				// check whether the path is not valid
+				f = new File(path);
+				if (f.exists() == false)
+					errorMessage += "8th argument: the template directory path does not exist\n";
+				else
+					templateDirPath = path;
+			}
 		}
 
 		// if not java and python but use template code, display an error message
 		if (templateDirPath.length() > 0 && !(progLang.equals("Java") || progLang.equals("Python")))
 			errorMessage += "8th argument: the template code removal currently works on Java or Python only\n";
-
 
 		boolean isCommonCodeAllowed = false;
 		text = args[8];
@@ -591,24 +624,28 @@ public class MainFrame extends JFrame {
 			// if not parsed correctly, the input is not boolean
 			errorMessage += "9th argument: the common code status should be either \"true\" or \"false\"\n";
 		}
-		
-		if(isCommonCodeAllowed == false && !(progLang.equals("Java") || progLang.equals("Python")))
-				errorMessage += "9th argument: the common code removal currently works on Java or Python only\n";
+
+		if (isCommonCodeAllowed == false && !(progLang.equals("Java") || progLang.equals("Python")))
+			errorMessage += "9th argument: the common code removal currently works on Java or Python only\n";
 
 		String similarityMeasurementType = "";
 		String rawSimilarityMeasurementType = args[9];
-		if (rawSimilarityMeasurementType.equalsIgnoreCase("MinHash"))
+		if (rawSimilarityMeasurementType.toLowerCase().endsWith("MinHash".toLowerCase()))
 			similarityMeasurementType = "MinHash";
-		else if (rawSimilarityMeasurementType.equalsIgnoreCase("Super-Bit"))
+		else if (rawSimilarityMeasurementType.toLowerCase().endsWith("Super-Bit".toLowerCase()))
 			similarityMeasurementType = "Super-Bit";
-		else if (rawSimilarityMeasurementType.equalsIgnoreCase("Jaccard"))
+		else if (rawSimilarityMeasurementType.toLowerCase().endsWith("Jaccard".toLowerCase()))
 			similarityMeasurementType = "Jaccard";
-		else if (rawSimilarityMeasurementType.equalsIgnoreCase("Cosine"))
+		else if (rawSimilarityMeasurementType.toLowerCase().endsWith("Cosine".toLowerCase()))
 			similarityMeasurementType = "Cosine";
-		else if (rawSimilarityMeasurementType.equalsIgnoreCase("RKRGST"))
+		else if (rawSimilarityMeasurementType.toLowerCase().endsWith("RKRGST".toLowerCase()))
 			similarityMeasurementType = "RKRGST";
 		else
 			errorMessage += "10th argument: similarity measurement type should be either \"SimHash\", \"Super-Bit\", \"Jaccard\",  \"Cosine\", or \"RKRGST\"\n";
+
+		boolean isSensitive = false;
+		if (rawSimilarityMeasurementType.toLowerCase().contains("sensitive"))
+			isSensitive = true;
 
 		String resourcePath = args[10];
 		// check whether the path is not valid
@@ -658,17 +695,11 @@ public class MainFrame extends JFrame {
 			// start processing
 			String resultPath = process(assignmentPath, submissionType, progLang, humanLang, simThreshold, maxPairs,
 					minMatchLength, templateDirPath, isCommonCodeAllowed, similarityMeasurementType, numClusters,
-					numStages);
+					numStages, isSensitive);
 
 			if (resultPath != null) {
-				// set the clipboard
-				StringSelection stringSelection = new StringSelection(resultPath);
-				Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-				clipboard.setContents(stringSelection, null);
-
 				// notify user that the process has been completed
-				System.out.println(
-						"The comparison process is completed\nThe report link has been copied to the clipboard\nSimply paste it in a web browser");
+				System.out.println("The comparison process is completed\nThe report link is " + resultPath);
 			}
 		}
 
@@ -676,9 +707,7 @@ public class MainFrame extends JFrame {
 
 	public static String process(String assignmentPath, String submissionType, String progLang, String humanLang,
 			int simThreshold, int maxPairs, int minMatchingLength, String templateDirPath, boolean isCommonCodeAllowed,
-			String similarityMeasurement, int numClusters, int numStages) {
-		
-		
+			String similarityMeasurement, int numClusters, int numStages, boolean isSensitive) {
 
 		ArrayList<File> filesToBeDeleted = new ArrayList<File>();
 
@@ -691,11 +720,11 @@ public class MainFrame extends JFrame {
 			progLang = "java";
 		} else if (progLang.equals("Python") || progLang.equals("py")) {
 			progLang = "py";
-		} else if (progLang.equals("Web (HTML with JS and CSS)") || progLang.equals("html")) {
+		} else if (progLang.equals("Web (HTML, JS, CSS and PHP)") || progLang.equals("html")) {
 			progLang = "html";
 		} else if (progLang.equals("Dart") || progLang.equals("dart")) {
 			progLang = "dart";
-		}else if (progLang.equals("C#") || progLang.equals("csharp")) {
+		} else if (progLang.equals("C#") || progLang.equals("csharp")) {
 			progLang = "cs";
 		}
 
@@ -712,24 +741,27 @@ public class MainFrame extends JFrame {
 		if (submissionType.startsWith("Multiple files"))
 			isMultipleFiles = true;
 
-		
+		// to store result
+		ArrayList<ComparisonPairTuple> result;
+
 		long before = System.nanoTime();
 		// do the comparison
 		if (progLang.equalsIgnoreCase("html"))
 			// exclusive for web as it handles js and css also
-			FastComparerWeb.doSyntacticComparison(assignmentPath, humanLang, simThreshold, minMatchingLength, maxPairs,
-					templateDirPath, similarityMeasurement, assignmentFile, assignmentParentDirPath, assignmentName,
-					isMultipleFiles, isCommonCodeAllowed, filesToBeDeleted, numClusters, numStages);
+			result = FastComparerWeb.doSyntacticComparison(assignmentPath, humanLang, simThreshold, minMatchingLength,
+					maxPairs, similarityMeasurement, assignmentFile, assignmentParentDirPath, assignmentName,
+					isMultipleFiles, isCommonCodeAllowed, filesToBeDeleted, numClusters, numStages, isSensitive);
 		else
-			FastComparer.doSyntacticComparison(assignmentPath, progLang, humanLang, simThreshold, minMatchingLength,
-					maxPairs, templateDirPath, similarityMeasurement, assignmentFile, assignmentParentDirPath,
-					assignmentName, isMultipleFiles, isCommonCodeAllowed, filesToBeDeleted, numClusters, numStages);
+			result = FastComparer.doSyntacticComparison(assignmentPath, progLang, humanLang, simThreshold,
+					minMatchingLength, maxPairs, templateDirPath, similarityMeasurement, assignmentFile,
+					assignmentParentDirPath, assignmentName, isMultipleFiles, isCommonCodeAllowed, filesToBeDeleted,
+					numClusters, numStages, isSensitive);
 
 		// start deleting all files
 		for (File f : filesToBeDeleted)
 			FileManipulator.deleteAllTemporaryFiles(f);
 		
-		System.out.println("procesing time: " + (System.nanoTime() - before));
+		// System.out.println("procesing time:\t" + (System.nanoTime() - before));
 
 		return assignmentParentDirPath + File.separator + "[out] " + assignmentName + File.separator + "index.html";
 

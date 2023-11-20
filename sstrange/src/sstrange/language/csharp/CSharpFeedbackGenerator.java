@@ -8,10 +8,7 @@ import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.Token;
 
-import sstrange.CodeMerger;
-import sstrange.language.java.JavaFeedbackToken;
 import sstrange.support.csharpantlr.CSharpLexer;
-import sstrange.support.javaantlr.JavaLexer;
 import sstrange.token.FeedbackToken;
 
 public class CSharpFeedbackGenerator {

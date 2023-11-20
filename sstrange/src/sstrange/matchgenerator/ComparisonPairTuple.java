@@ -7,20 +7,22 @@ import support.stringmatching.GSTMatchTuple;
 
 public class ComparisonPairTuple implements Comparable<ComparisonPairTuple> {
 	private int submissionID1, submissionID2;
-	private double simResult;
+	private double syntaxSimResult, surfaceSimResult;
 	private int sameClusterOccurrences;
 	private String resultedHTMLFilename;
 	private ArrayList<GSTMatchTuple> matches;
 	private String assignmentName1, assignmentName2;
 
 	public ComparisonPairTuple(int submissionID1, int submissionID2, String assignmentName1, String assignmentName2,
-			double simResult, int sameClusterOccurrences, ArrayList<GSTMatchTuple> matches) {
+			double syntaxSimResult, double surfaceSimResult, int sameClusterOccurrences,
+			ArrayList<GSTMatchTuple> matches) {
 		super();
 		this.submissionID1 = submissionID1;
 		this.submissionID2 = submissionID2;
 		this.assignmentName1 = assignmentName1;
 		this.assignmentName2 = assignmentName2;
-		this.simResult = simResult;
+		this.syntaxSimResult = syntaxSimResult;
+		this.surfaceSimResult = surfaceSimResult;
 		this.sameClusterOccurrences = sameClusterOccurrences;
 		this.resultedHTMLFilename = "";
 		this.matches = matches;
@@ -34,13 +36,11 @@ public class ComparisonPairTuple implements Comparable<ComparisonPairTuple> {
 		this.resultedHTMLFilename = resultedHTMLFilename;
 	}
 
-
 	@Override
 	public int compareTo(ComparisonPairTuple arg0) {
 		// sort based on avg sim in descending order
 		return (int) ((-getSimResult() + arg0.getSimResult()) * 100000);
 	}
-
 
 	public int getSameClusterOccurrences() {
 		return sameClusterOccurrences;
@@ -67,11 +67,26 @@ public class ComparisonPairTuple implements Comparable<ComparisonPairTuple> {
 	}
 
 	public double getSimResult() {
-		return simResult;
+		if (surfaceSimResult == -1)
+			return syntaxSimResult;
+		else
+			return 0.5 * syntaxSimResult + 0.5 * surfaceSimResult;
 	}
 
-	public void setSimResult(double simResult) {
-		this.simResult = simResult;
+	public double getSyntaxSimResult() {
+		return syntaxSimResult;
+	}
+
+	public void setSyntaxSimResult(double syntaxSimResult) {
+		this.syntaxSimResult = syntaxSimResult;
+	}
+
+	public double getSurfaceSimResult() {
+		return surfaceSimResult;
+	}
+
+	public void setSurfaceSimResult(double surfaceSimResult) {
+		this.surfaceSimResult = surfaceSimResult;
 	}
 
 	public ArrayList<GSTMatchTuple> getMatches() {

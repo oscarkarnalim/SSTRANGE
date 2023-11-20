@@ -19,18 +19,20 @@ import support.stringmatching.GSTMatchTuple;
 
 public class HTMLHtmlGenerator {
 	/*
-	 * This class is different from HTMLGenerator as it is dedicated to HTML with JS and CSS
+	 * This class is different from HTMLGenerator as it is dedicated to HTML/PHP
+	 * with JS and CSS
 	 */
-	
-	public static void generateHtmlForSSTRANGE(String codepath1, String codepath2, String jsCodepath1,
-			String jsCodepath2, String cssCodepath1, String cssCodepath2, ArrayList<FeedbackToken> tokenString1,
-			ArrayList<FeedbackToken> tokenString2, ArrayList<FeedbackToken> jsTokenString1,
-			ArrayList<FeedbackToken> jsTokenString2, ArrayList<FeedbackToken> cssTokenString1,
-			ArrayList<FeedbackToken> cssTokenString2, String dirname1, String dirname2, String templateHTMLPath,
-			String outputHTMLPath, int minimumMatchLength, int sameClusterOccurrences, String languageCode,
-			ArrayList<GSTMatchTuple> matches, ArrayList<GSTMatchTuple> jsMatches, ArrayList<GSTMatchTuple> cssMatches)
-			throws Exception {
 
+	public static void generateHtmlForSSTRANGE(String codepath1, String codepath2, String phpCodepath1,
+			String phpCodepath2, String jsCodepath1, String jsCodepath2, String cssCodepath1, String cssCodepath2,
+			ArrayList<FeedbackToken> tokenString1, ArrayList<FeedbackToken> tokenString2,
+			ArrayList<FeedbackToken> phpTokenString1, ArrayList<FeedbackToken> phpTokenString2,
+			ArrayList<FeedbackToken> jsTokenString1, ArrayList<FeedbackToken> jsTokenString2,
+			ArrayList<FeedbackToken> cssTokenString1, ArrayList<FeedbackToken> cssTokenString2, String dirname1,
+			String dirname2, String templateHTMLPath, String outputHTMLPath, int minimumMatchLength,
+			int sameClusterOccurrences, String languageCode, ArrayList<GSTMatchTuple> matches,
+			ArrayList<GSTMatchTuple> phpMatches, ArrayList<GSTMatchTuple> jsMatches,
+			ArrayList<GSTMatchTuple> cssMatches) throws Exception {
 		// HTML
 
 		// get syntax messages
@@ -40,6 +42,13 @@ public class HTMLHtmlGenerator {
 		// generate the information strings
 		String[] defaultInfoStrings = generateInformationStrings(gSyntaxMessage, codepath1, codepath2,
 				"origtablecontent", "", languageCode);
+
+		// PHP
+		gSyntaxMessage = FeedbackMessageGenerator.generateSimilarityMessages(phpTokenString1, phpTokenString2,
+				minimumMatchLength, languageCode, phpMatches);
+
+		String[] phpInfoStrings = generateInformationStrings(gSyntaxMessage, phpCodepath1, phpCodepath2,
+				"phporigtablecontent", "php", languageCode);
 
 		// JS
 		gSyntaxMessage = FeedbackMessageGenerator.generateSimilarityMessages(jsTokenString1, jsTokenString2,
@@ -82,6 +91,20 @@ public class HTMLHtmlGenerator {
 				line = line.replace("@explanation", defaultInfoStrings[3]);
 			}
 
+			// for php
+			if (line.contains("@phpcode1")) {
+				line = line.replace("@phpcode1", phpInfoStrings[0]);
+			}
+			if (line.contains("@phpcode2")) {
+				line = line.replace("@phpcode2", phpInfoStrings[1]);
+			}
+			if (line.contains("@phptablecontent")) {
+				line = line.replace("@phptablecontent", phpInfoStrings[2]);
+			}
+			if (line.contains("@phpexplanation")) {
+				line = line.replace("@phpexplanation", phpInfoStrings[3]);
+			}
+
 			// for js
 			if (line.contains("@jscode1")) {
 				line = line.replace("@jscode1", jsInfoStrings[0]);
@@ -119,6 +142,11 @@ public class HTMLHtmlGenerator {
 
 	private static String[] generateInformationStrings(ArrayList<FeedbackMessage> gSyntaxMessage, String filepath1,
 			String filepath2, String tableId, String mode, String humanLanguageId) throws Exception {
+
+		String noteForEmptyFiletype = "No files in such format detected. \nKindly check other file types.";
+		if (humanLanguageId.equals("id"))
+			noteForEmptyFiletype = "Tidak ada berkas dengan format terkait terdeteksi. \nMohon mengecek tipe berkas lainnya.";
+
 		// get the html strings
 		String code1, code2;
 
@@ -131,7 +159,11 @@ public class HTMLHtmlGenerator {
 		}
 
 		code1 = readCode1(filepath1, tableId, gSyntaxMessage);
+		if (code1.trim().length() == 0)
+			code1 = noteForEmptyFiletype;
 		code2 = readCode2(filepath2, tableId, gSyntaxMessage);
+		if (code2.trim().length() == 0)
+			code2 = noteForEmptyFiletype;
 
 		// get table contents
 		ArrayList<FeedbackMessage> messages = new ArrayList<>();

@@ -13,7 +13,7 @@ import org.antlr.v4.runtime.Token;
 import sstrange.CodeMerger;
 import sstrange.support.stringmatching.AdditionalKeywordsManager;
 import sstrange.token.FeedbackToken;
-import support.pythonantlr.Python3Lexer;
+import sstrange.support.pythonantlr.Python3Lexer;
 
 public class PythonFeedbackGenerator {
 

@@ -546,6 +546,7 @@
 
 			<div class="tab">
 			  <button id="origbutton" class="tablinks" onclick="openTab(event, 'orig', 'origtablecontent')">HTML</button>
+			  <button class="tablinks" onclick="openTab(event, 'phporig', 'phporigtablecontent')">PHP</button>
 			  <button class="tablinks" onclick="openTab(event, 'jsorig', 'jsorigtablecontent')">JavaScript</button>
 			  <button class="tablinks" onclick="openTab(event, 'cssorig', 'cssorigtablecontent')">CSS</button>
 			  <button class="tablinks" onclick="window.open('index.html', '_self');">Back</button>
@@ -583,6 +584,42 @@
 			<div class="codeview">
 				<pre class="prettyprint linenums">
 @code2
+				</pre>
+			</div>
+		</div>
+		
+		<div id="phporig" class="tabcontent">
+			<span class="infotitle"> Similarity information: </span>
+			<span class="infotitle"> Explanation: </span>
+			<div class="tablecontainer">
+				<div class="tableheader">
+					<table class="header">
+						<tr>
+							<th onclick="sortTable(0,'phporigtablecontent',false, 'phporigcontainer')" >ID <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(1,'phporigtablecontent',true, 'phporigcontainer')">Left code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(2,'phporigtablecontent',true, 'phporigcontainer')">Right code line <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(3,'phporigtablecontent',true, 'phporigcontainer')">Min length <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+							<th onclick="sortTable(4,'phporigtablecontent',true, 'phporigcontainer')">Matched tokens <img class="sortpic" src="strange_html_layout_additional_files/sort icon.png" alt="logo"></th>
+						</tr>
+					</table>
+				</div>
+				<div class="tablecontentcontainer" id="phporigcontainer">
+					<table id="phporigtablecontent">
+@phptablecontent
+					</table>
+				</div>
+			</div>
+			<div class="explanation">
+@phpexplanation
+			</div>
+			<div class="codeview">
+				<pre class="prettyprint linenums">
+@phpcode1
+				</pre>
+			</div>
+			<div class="codeview">
+				<pre class="prettyprint linenums">
+@phpcode2
 				</pre>
 			</div>
 		</div>

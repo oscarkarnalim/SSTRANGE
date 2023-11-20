@@ -32,7 +32,7 @@ public class JavaFeedbackGenerator {
 			FeedbackToken cur = tokenString.get(i);
 			String type = cur.getType();
 
-			if (type.equals("Identifier")) {
+			if (type.equals("IDENTIFIER")) {
 				if (cur.getContent().equals("Integer") || cur.getContent().equals("Short")
 						|| cur.getContent().equals("Long") || cur.getContent().equals("Byte")
 						|| cur.getContent().equals("Float") || cur.getContent().equals("Double")) {
@@ -41,9 +41,9 @@ public class JavaFeedbackGenerator {
 					cur.setContentForComparison("string data type");
 				} else
 					cur.setContentForComparison("identifier");
-			} else if (type.equals("StringLiteral") || type.equals("CharacterLiteral")) {
+			} else if (type.equals("STRING_LITERAL") || type.equals("CHARACTER_LITERAL")) {
 				cur.setContentForComparison("string literal");
-			} else if (type.equals("IntegerLiteral") || type.equals("FloatingPointLiteral"))
+			} else if (type.equals("INTEGER_LITERAL") || type.equals("FLOAT_LITERAL"))
 				cur.setContentForComparison("number literal");
 			else if (type.equals("'char'"))
 				cur.setContentForComparison("string data type");

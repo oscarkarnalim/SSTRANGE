@@ -16,6 +16,7 @@ import sstrange.language.css.CSSFeedbackGenerator;
 import sstrange.language.html.HTMLFeedbackGenerator;
 import sstrange.language.html.HTMLHtmlGenerator;
 import sstrange.language.js.JSFeedbackGenerator;
+import sstrange.language.php.PHPFeedbackGenerator;
 import sstrange.lshcalculator.CosineCalculator;
 import sstrange.lshcalculator.IndexGenerator;
 import sstrange.lshcalculator.JaccardCalculator;
@@ -29,15 +30,15 @@ import support.stringmatching.GSTMatchTuple;
 public class FastComparerWeb {
 
 	public static ArrayList<ComparisonPairTuple> doSyntacticComparison(String assignmentPath, String humanLang,
-			int simThreshold, int minMatchingLength, int maxPairs, String templateDirPath, String similarityMeasurement,
-			File assignmentFile, String assignmentParentDirPath, String assignmentName, boolean isMultipleFiles,
-			boolean isCommonCodeAllowed, ArrayList<File> filesToBeDeleted,
-			int numClusters, int numStages) {
+			int simThreshold, int minMatchingLength, int maxPairs, String similarityMeasurement, File assignmentFile,
+			String assignmentParentDirPath, String assignmentName, boolean isMultipleFiles, boolean isCommonCodeAllowed,
+			ArrayList<File> filesToBeDeleted, int numClusters, int numStages, boolean isSensitive) {
 
 		// if multiple files, merge them
 		if (isMultipleFiles) {
 			String newAssignmentPath = assignmentParentDirPath + File.separator + "[merged] " + assignmentName;
-			CodeMerger.mergeCode(assignmentPath, "html", newAssignmentPath);
+			CodeMerger.mergeCode(assignmentPath, "html", newAssignmentPath); // including PHP, external CSS and external
+																				// JS
 			assignmentPath = newAssignmentPath;
 			// mark new assignment path to be deleted after the whole process
 			filesToBeDeleted.add(new File(newAssignmentPath));
@@ -48,15 +49,15 @@ public class FastComparerWeb {
 
 		// generate STRANGE reports
 		return compareAndGenerateHTMLReports(assignmentPath, resultPath, humanLang, simThreshold, minMatchingLength,
-				maxPairs, humanLang, isMultipleFiles, similarityMeasurement, numClusters,
-				numStages, filesToBeDeleted);
+				maxPairs, humanLang, isMultipleFiles, similarityMeasurement, numClusters, numStages, filesToBeDeleted,
+				isSensitive);
 
 	}
 
 	private static ArrayList<ComparisonPairTuple> compareAndGenerateHTMLReports(String dirPath, String resultPath,
 			String humanLang, int simThreshold, int minMatchLength, int maxPairs, String languageCode,
-			boolean isMultipleFiles, String similarityMeasurement,
-			int numClusters, int numStages, ArrayList<File> filesToBeDeleted) {
+			boolean isMultipleFiles, String similarityMeasurement, int numClusters, int numStages,
+			ArrayList<File> filesToBeDeleted, boolean isSensitive) {
 		// create the output dir
 		File resultDir = new File(resultPath);
 		resultDir.mkdir();
@@ -65,6 +66,8 @@ public class FastComparerWeb {
 
 		// tokenise all programs and generate the indexes
 		ArrayList<ArrayList<FeedbackToken>> tokenStrings = new ArrayList<ArrayList<FeedbackToken>>();
+		// for PHP
+		ArrayList<ArrayList<FeedbackToken>> phpTokenStrings = new ArrayList<ArrayList<FeedbackToken>>();
 		// for javascript
 		ArrayList<ArrayList<FeedbackToken>> jsTokenStrings = new ArrayList<ArrayList<FeedbackToken>>();
 		// for css
@@ -72,35 +75,80 @@ public class FastComparerWeb {
 
 		// the indexes
 		ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes = new ArrayList<HashMap<String, ArrayList<Integer>>>();
+		ArrayList<HashMap<String, ArrayList<Integer>>> phpTokenIndexes = new ArrayList<HashMap<String, ArrayList<Integer>>>();
 		ArrayList<HashMap<String, ArrayList<Integer>>> jsTokenIndexes = new ArrayList<HashMap<String, ArrayList<Integer>>>();
 		ArrayList<HashMap<String, ArrayList<Integer>>> cssTokenIndexes = new ArrayList<HashMap<String, ArrayList<Integer>>>();
+
+		// surface indexes
+		ArrayList<HashMap<String, ArrayList<Integer>>> surfaceTokenIndexes = new ArrayList<HashMap<String, ArrayList<Integer>>>();
+		ArrayList<HashMap<String, ArrayList<Integer>>> surfacePhpTokenIndexes = new ArrayList<HashMap<String, ArrayList<Integer>>>();
+		ArrayList<HashMap<String, ArrayList<Integer>>> surfaceJsTokenIndexes = new ArrayList<HashMap<String, ArrayList<Integer>>>();
+		ArrayList<HashMap<String, ArrayList<Integer>>> surfaceCssTokenIndexes = new ArrayList<HashMap<String, ArrayList<Integer>>>();
+
 		for (int i = 0; i < assignments.length; i++) {
 			// for each code, tokenise and generalise
 			File code = CodeReader.getCode(assignments[i], "html");
+			File codePHP = CodeReader.getCode(assignments[i], "php");
 
-			if (code == null) {
+			if (code == null && codePHP == null) {
 				tokenStrings.add(new ArrayList<FeedbackToken>());
-				tokenIndexes.add(new HashMap<String, ArrayList<Integer>>());
+				phpTokenStrings.add(new ArrayList<FeedbackToken>());
 				jsTokenStrings.add(new ArrayList<FeedbackToken>());
-				jsTokenIndexes.add(new HashMap<String, ArrayList<Integer>>());
 				cssTokenStrings.add(new ArrayList<FeedbackToken>());
-				cssTokenIndexes.add(new HashMap<String, ArrayList<Integer>>());
-			} else {
 
+				// if not RKGST, generate empty index
+				if (similarityMeasurement.equalsIgnoreCase("RKRGST") == false) {
+					tokenIndexes.add(new HashMap<String, ArrayList<Integer>>());
+					phpTokenIndexes.add(new HashMap<String, ArrayList<Integer>>());
+					jsTokenIndexes.add(new HashMap<String, ArrayList<Integer>>());
+					cssTokenIndexes.add(new HashMap<String, ArrayList<Integer>>());
+					if (isSensitive) {
+						// if sensitive, add sensitive index
+						surfaceTokenIndexes.add(new HashMap<String, ArrayList<Integer>>());
+						surfacePhpTokenIndexes.add(new HashMap<String, ArrayList<Integer>>());
+						surfaceJsTokenIndexes.add(new HashMap<String, ArrayList<Integer>>());
+						surfaceCssTokenIndexes.add(new HashMap<String, ArrayList<Integer>>());
+					}
+				}
+			} else {
 				// generate HTML token strings
 				ArrayList<FeedbackToken> tokenString = null;
-				tokenString = HTMLFeedbackGenerator.generateFeedbackTokenString(code.getAbsolutePath(),
-						isMultipleFiles);
-				tokenString = HTMLFeedbackGenerator.syntaxTokenStringPreprocessing(tokenString);
-				// prepare for deletion
-				filesToBeDeleted.add(new File(code.getAbsolutePath() + ".js"));
-				filesToBeDeleted.add(new File(code.getAbsolutePath() + ".css"));
+				if (code != null) {
+					tokenString = HTMLFeedbackGenerator.generateFeedbackTokenString(code.getAbsolutePath(),
+							isMultipleFiles);
+					tokenString = HTMLFeedbackGenerator.syntaxTokenStringPreprocessing(tokenString);
+					// prepare for deletion
+					filesToBeDeleted.add(new File(code.getAbsolutePath() + ".js"));
+					filesToBeDeleted.add(new File(code.getAbsolutePath() + ".css"));
+				} else {
+					tokenString = new ArrayList<>();
+				}
+
+				// generate PHP token strings
+				ArrayList<FeedbackToken> phpTokenString = null;
+				if (codePHP != null) {
+					phpTokenString = PHPFeedbackGenerator.generateFeedbackTokenString(codePHP.getAbsolutePath(),
+							isMultipleFiles);
+					phpTokenString = PHPFeedbackGenerator.syntaxTokenStringPreprocessing(phpTokenString);
+					// prepare for deletion
+					filesToBeDeleted.add(new File(codePHP.getAbsolutePath() + ".js"));
+					filesToBeDeleted.add(new File(codePHP.getAbsolutePath() + ".css"));
+				} else {
+					phpTokenString = new ArrayList<>();
+				}
 
 				File jscode, csscode;
 
 				if (isMultipleFiles) {
-					jscode = CodeReader.getCodeButNotThis(assignments[i], "js", code.getName() + ".js");
-					csscode = CodeReader.getCodeButNotThis(assignments[i], "css", code.getName() + ".css");
+					ArrayList<String> excludedJS = new ArrayList<>();
+					excludedJS.add(code.getName() + ".js");
+					excludedJS.add(codePHP.getName() + ".js");
+					jscode = CodeReader.getCodeButNotThese(assignments[i], "js", excludedJS);
+
+					ArrayList<String> excludedCSS = new ArrayList<>();
+					excludedCSS.add(code.getName() + ".css");
+					excludedCSS.add(codePHP.getName() + ".css");
+					csscode = CodeReader.getCodeButNotThese(assignments[i], "css", excludedCSS);
 
 					// merge js obtained from html to the merged javascript file and remove the file
 					try {
@@ -116,6 +164,25 @@ public class FastComparerWeb {
 							fw.close();
 							// delete the file
 							jsinhtml.delete();
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+					// merge js obtained from php to the merged javascript file and remove the file
+					try {
+						FileWriter fw = new FileWriter(jscode, true);
+						File jsinphp = new File(codePHP.getAbsolutePath() + ".js");
+						if (jsinphp.exists()) {
+							// take all the content
+							Scanner sc = new Scanner(jsinphp);
+							while (sc.hasNextLine()) {
+								fw.write(sc.nextLine() + System.lineSeparator());
+							}
+							sc.close();
+							fw.close();
+							// delete the file
+							jsinphp.delete();
 						}
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -139,20 +206,38 @@ public class FastComparerWeb {
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
+
+					// merge css obtained from php to the merged css file and remove the file
+					try {
+						FileWriter fw = new FileWriter(csscode, true);
+						File cssinphp = new File(codePHP.getAbsolutePath() + ".css");
+						if (cssinphp.exists()) {
+							// take all the content
+							Scanner sc = new Scanner(cssinphp);
+							while (sc.hasNextLine()) {
+								fw.write(sc.nextLine() + System.lineSeparator());
+							}
+							sc.close();
+							fw.close();
+							// delete the file
+							cssinphp.delete();
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 				} else {
 					jscode = CodeReader.getCode(assignments[i], "js");
 					csscode = CodeReader.getCode(assignments[i], "css");
 				}
 
 				// generate token strings
-				ArrayList<FeedbackToken> jsTokenString = null, 
-						cssTokenString = null;
+				ArrayList<FeedbackToken> jsTokenString = null, cssTokenString = null;
 
 				if (jscode == null) {
 					jsTokenString = new ArrayList<FeedbackToken>();
 				} else {
 					jsTokenString = JSFeedbackGenerator.generateFeedbackTokenString(jscode.getAbsolutePath());
-					jsTokenString = HTMLFeedbackGenerator.syntaxTokenStringPreprocessing(jsTokenString);
+					jsTokenString = JSFeedbackGenerator.syntaxTokenStringPreprocessing(jsTokenString);
 				}
 
 				if (csscode == null) {
@@ -164,6 +249,7 @@ public class FastComparerWeb {
 
 				// add the token string and its raw form
 				tokenStrings.add(tokenString);
+				phpTokenStrings.add(phpTokenString);
 				jsTokenStrings.add(jsTokenString);
 				cssTokenStrings.add(cssTokenString);
 
@@ -171,68 +257,92 @@ public class FastComparerWeb {
 				if (similarityMeasurement.equalsIgnoreCase("RKRGST") == false) {
 					// generate the index
 					HashMap<String, ArrayList<Integer>> tokenIndex = IndexGenerator.generateIndex(tokenString,
-							minMatchLength);
+							minMatchLength, false);
+					HashMap<String, ArrayList<Integer>> phpTokenIndex = IndexGenerator.generateIndex(phpTokenString,
+							minMatchLength, false);
 					HashMap<String, ArrayList<Integer>> jsTokenIndex = IndexGenerator.generateIndex(jsTokenString,
-							minMatchLength);
+							minMatchLength, false);
 					HashMap<String, ArrayList<Integer>> cssTokenIndex = IndexGenerator.generateIndex(cssTokenString,
-							minMatchLength);
+							minMatchLength, false);
 
 					// add the token index
 					tokenIndexes.add(tokenIndex);
+					phpTokenIndexes.add(phpTokenIndex);
 					jsTokenIndexes.add(jsTokenIndex);
 					cssTokenIndexes.add(cssTokenIndex);
+
+					if (isSensitive) {
+						// generate the sensitive index
+						HashMap<String, ArrayList<Integer>> surfaceTokenIndex = IndexGenerator
+								.generateIndex(tokenString, minMatchLength, true);
+						HashMap<String, ArrayList<Integer>> surfacePhpTokenIndex = IndexGenerator
+								.generateIndex(phpTokenString, minMatchLength, true);
+						HashMap<String, ArrayList<Integer>> surfaceJsTokenIndex = IndexGenerator
+								.generateIndex(jsTokenString, minMatchLength, true);
+						HashMap<String, ArrayList<Integer>> surfaceCssTokenIndex = IndexGenerator
+								.generateIndex(cssTokenString, minMatchLength, true);
+
+						// add the token index
+						surfaceTokenIndexes.add(surfaceTokenIndex);
+						surfacePhpTokenIndexes.add(surfacePhpTokenIndex);
+						surfaceJsTokenIndexes.add(surfaceJsTokenIndex);
+						surfaceCssTokenIndexes.add(surfaceCssTokenIndex);
+					}
 				}
 			}
 		}
 
 		String progLang = "html";
 		if (similarityMeasurement.equalsIgnoreCase("MinHash")) {
-			// generate vector header (html, js, dan css)
+			// generate vector header (html, php, js, dan css)
 			ArrayList<String> vectorHeader = IndexGenerator.generateVectorHeader(tokenIndexes);
+			vectorHeader.addAll(IndexGenerator.generateVectorHeader(phpTokenIndexes));
 			vectorHeader.addAll(IndexGenerator.generateVectorHeader(jsTokenIndexes));
 			vectorHeader.addAll(IndexGenerator.generateVectorHeader(cssTokenIndexes));
 
 			// calculate minhash
-			return _compareAndGenerateHTMLReportsMinHash(assignments, tokenStrings, jsTokenStrings,
-					cssTokenStrings, tokenIndexes, jsTokenIndexes,
-					cssTokenIndexes, vectorHeader, dirPath, resultPath, progLang, humanLang, simThreshold,
-					minMatchLength, maxPairs, languageCode, numClusters, numStages);
+			return _compareAndGenerateHTMLReportsMinHash(assignments, tokenStrings, phpTokenStrings, jsTokenStrings,
+					cssTokenStrings, tokenIndexes, phpTokenIndexes, jsTokenIndexes, cssTokenIndexes,
+					surfaceTokenIndexes, surfacePhpTokenIndexes, surfaceJsTokenIndexes, surfaceCssTokenIndexes,
+					vectorHeader, dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs,
+					languageCode, numClusters, numStages);
 		} else if (similarityMeasurement.equalsIgnoreCase("Super-Bit")) {
 			// generate vector header (html, js, dan css)
 			ArrayList<String> vectorHeader = IndexGenerator.generateVectorHeader(tokenIndexes);
+			vectorHeader.addAll(IndexGenerator.generateVectorHeader(phpTokenIndexes));
 			vectorHeader.addAll(IndexGenerator.generateVectorHeader(jsTokenIndexes));
 			vectorHeader.addAll(IndexGenerator.generateVectorHeader(cssTokenIndexes));
 
 			// calculate super-bit
-			return _compareAndGenerateHTMLReportsSuoerBit(assignments, tokenStrings, jsTokenStrings,
-					cssTokenStrings, tokenIndexes, jsTokenIndexes,
-					cssTokenIndexes, vectorHeader, dirPath, resultPath, progLang, humanLang, simThreshold,
-					minMatchLength, maxPairs, languageCode, numClusters, numStages);
+			return _compareAndGenerateHTMLReportsSuoerBit(assignments, tokenStrings, phpTokenStrings, jsTokenStrings,
+					cssTokenStrings, tokenIndexes, phpTokenIndexes, jsTokenIndexes, cssTokenIndexes,
+					surfaceTokenIndexes, surfacePhpTokenIndexes, surfaceJsTokenIndexes, surfaceCssTokenIndexes,
+					vectorHeader, dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs,
+					languageCode, numClusters, numStages);
 		} else if (similarityMeasurement.equalsIgnoreCase("Jaccard")) {
-			return _compareAndGenerateHTMLReportsJaccard(assignments, tokenStrings, jsTokenStrings,
-					 cssTokenStrings,  tokenIndexes, jsTokenIndexes,
-					cssTokenIndexes, dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs,
-					languageCode);
+			return _compareAndGenerateHTMLReportsJaccard(assignments, tokenStrings, phpTokenStrings, jsTokenStrings,
+					cssTokenStrings, tokenIndexes, phpTokenIndexes, jsTokenIndexes, cssTokenIndexes,
+					surfaceTokenIndexes, surfacePhpTokenIndexes, surfaceJsTokenIndexes, surfaceCssTokenIndexes, dirPath,
+					resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs, languageCode);
 		} else if (similarityMeasurement.equalsIgnoreCase("Cosine")) {
-			return _compareAndGenerateHTMLReportsCosine(assignments, tokenStrings, jsTokenStrings,
-					cssTokenStrings, tokenIndexes, jsTokenIndexes,
-					cssTokenIndexes, dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs,
-					languageCode);
+			return _compareAndGenerateHTMLReportsCosine(assignments, tokenStrings, phpTokenStrings, jsTokenStrings,
+					cssTokenStrings, tokenIndexes, phpTokenIndexes, jsTokenIndexes, cssTokenIndexes,
+					surfaceTokenIndexes, surfacePhpTokenIndexes, surfaceJsTokenIndexes, surfaceCssTokenIndexes, dirPath,
+					resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs, languageCode);
 		} else {
 			// RKRGST
-			return _compareAndGenerateHTMLReportsRKRGST(assignments, tokenStrings, jsTokenStrings,
-					cssTokenStrings,  dirPath, resultPath, progLang, humanLang,
-					simThreshold, minMatchLength, maxPairs, languageCode);
+			return _compareAndGenerateHTMLReportsRKRGST(assignments, tokenStrings, phpTokenStrings, jsTokenStrings,
+					cssTokenStrings, dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs,
+					languageCode, isSensitive);
 		}
 
 	}
 
 	private static ArrayList<ComparisonPairTuple> _compareAndGenerateHTMLReportsRKRGST(File[] assignments,
-			ArrayList<ArrayList<FeedbackToken>> tokenStrings, 
-			ArrayList<ArrayList<FeedbackToken>> jsTokenStrings, 
-			ArrayList<ArrayList<FeedbackToken>> cssTokenStrings, 
+			ArrayList<ArrayList<FeedbackToken>> tokenStrings, ArrayList<ArrayList<FeedbackToken>> phpTokenStrings,
+			ArrayList<ArrayList<FeedbackToken>> jsTokenStrings, ArrayList<ArrayList<FeedbackToken>> cssTokenStrings,
 			String dirPath, String resultPath, String progLang, String humanLang, int simThreshold, int minMatchLength,
-			int maxPairs, String languageCode) {
+			int maxPairs, String languageCode, boolean isSensitive) {
 		// RKRGST
 		try {
 			// to store the result
@@ -244,19 +354,24 @@ public class FastComparerWeb {
 
 					// get matched tiles with RKRGST
 					ArrayList<GSTMatchTuple> simTuples = FeedbackMessageGenerator
-							.generateMatchedTuples(tokenStrings.get(j), tokenStrings.get(k), minMatchLength);
+							.generateMatchedTuples(tokenStrings.get(j), tokenStrings.get(k), minMatchLength, false);
+					// php
+					ArrayList<GSTMatchTuple> phpSimTuples = FeedbackMessageGenerator.generateMatchedTuples(
+							phpTokenStrings.get(j), phpTokenStrings.get(k), minMatchLength, false);
 					// javascript
 					ArrayList<GSTMatchTuple> jsSimTuples = FeedbackMessageGenerator
-							.generateMatchedTuples(jsTokenStrings.get(j), jsTokenStrings.get(k), minMatchLength);
+							.generateMatchedTuples(jsTokenStrings.get(j), jsTokenStrings.get(k), minMatchLength, false);
 					// CSS
-					ArrayList<GSTMatchTuple> cssSimTuples = FeedbackMessageGenerator
-							.generateMatchedTuples(cssTokenStrings.get(j), cssTokenStrings.get(k), minMatchLength);
+					ArrayList<GSTMatchTuple> cssSimTuples = FeedbackMessageGenerator.generateMatchedTuples(
+							cssTokenStrings.get(j), cssTokenStrings.get(k), minMatchLength, false);
 
 					// get the sim degree for RKRGST
-					int simDegree = (int) (((double) (2 * (MatchGenerator.coverage(simTuples)
-							+ MatchGenerator.coverage(jsSimTuples) + MatchGenerator.coverage(cssSimTuples)))
-							/ (double) (tokenStrings.get(j).size() + jsTokenStrings.get(j).size()
-									+ cssTokenStrings.get(j).size() + tokenStrings.get(k).size()
+					int simDegree = (int) (((double) (2
+							* (MatchGenerator.coverage(simTuples) + MatchGenerator.coverage(phpSimTuples)
+									+ MatchGenerator.coverage(jsSimTuples) + MatchGenerator.coverage(cssSimTuples)))
+							/ (double) (tokenStrings.get(j).size() + phpTokenStrings.get(j).size()
+									+ jsTokenStrings.get(j).size() + cssTokenStrings.get(j).size()
+									+ tokenStrings.get(k).size() + phpTokenStrings.get(k).size()
 									+ jsTokenStrings.get(k).size() + cssTokenStrings.get(k).size()))
 							* 100);
 
@@ -271,9 +386,40 @@ public class FastComparerWeb {
 						if (code1 == null || code2 == null)
 							continue;
 
+						// calculate surface sim if needed
+						int surfaceSimDegree = -1;
+						if (isSensitive) {
+							// get surface matched tiles with RKRGST
+							ArrayList<GSTMatchTuple> surfaceSimTuples = FeedbackMessageGenerator.generateMatchedTuples(
+									tokenStrings.get(j), tokenStrings.get(k), minMatchLength, true);
+							// surface php
+							ArrayList<GSTMatchTuple> surfacePhpSimTuples = FeedbackMessageGenerator
+									.generateMatchedTuples(phpTokenStrings.get(j), phpTokenStrings.get(k),
+											minMatchLength, true);
+							// surface javascript
+							ArrayList<GSTMatchTuple> surfaceJsSimTuples = FeedbackMessageGenerator
+									.generateMatchedTuples(jsTokenStrings.get(j), jsTokenStrings.get(k), minMatchLength,
+											true);
+							// surface CSS
+							ArrayList<GSTMatchTuple> surfaceCssSimTuples = FeedbackMessageGenerator
+									.generateMatchedTuples(cssTokenStrings.get(j), cssTokenStrings.get(k),
+											minMatchLength, true);
+
+							// get the surface sim degree for RKRGST
+							surfaceSimDegree = (int) (((double) (2 * (MatchGenerator.coverage(surfaceSimTuples)
+									+ MatchGenerator.coverage(surfacePhpSimTuples)
+									+ MatchGenerator.coverage(surfaceJsSimTuples)
+									+ MatchGenerator.coverage(surfaceCssSimTuples)))
+									/ (double) (tokenStrings.get(j).size() + phpTokenStrings.get(j).size()
+											+ jsTokenStrings.get(j).size() + cssTokenStrings.get(j).size()
+											+ tokenStrings.get(k).size() + phpTokenStrings.get(k).size()
+											+ jsTokenStrings.get(k).size() + cssTokenStrings.get(k).size()))
+									* 100);
+						}
+
 						// add the comparison pair
-						codePairs.add(new ComparisonPairTupleWeb(j, k, dirname1, dirname2, simDegree, 1, simTuples,
-								jsSimTuples, cssSimTuples));
+						codePairs.add(new ComparisonPairTupleWeb(j, k, dirname1, dirname2, simDegree, surfaceSimDegree,
+								1, simTuples, phpSimTuples, jsSimTuples, cssSimTuples));
 					}
 				}
 			}
@@ -294,6 +440,8 @@ public class FastComparerWeb {
 
 				File code1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], progLang);
 				File code2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], progLang);
+				File phpCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "php");
+				File phpCode2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], "php");
 				File jsCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "js");
 				File jsCode2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], "js");
 				File cssCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "css");
@@ -303,14 +451,15 @@ public class FastComparerWeb {
 				ct.setResultedHTMLFilename(syntacticFilename);
 
 				HTMLHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-						jsCode1.getAbsolutePath(), jsCode2.getAbsolutePath(), cssCode1.getAbsolutePath(),
-						cssCode2.getAbsolutePath(), tokenStrings.get(ct.getSubmissionID1()),
-						tokenStrings.get(ct.getSubmissionID2()), jsTokenStrings.get(ct.getSubmissionID1()),
-						jsTokenStrings.get(ct.getSubmissionID2()), cssTokenStrings.get(ct.getSubmissionID1()),
-						cssTokenStrings.get(ct.getSubmissionID2()), ct.getAssignmentName1(), ct.getAssignmentName2(),
-						MainFrame.pairWebTemplatePath, syntacticFilepath, minMatchLength,
-						ct.getSameClusterOccurrences(), humanLang, ct.getMatches(), ct.getJsMatches(),
-						ct.getCssMatches());
+						phpCode1.getAbsolutePath(), phpCode2.getAbsolutePath(), jsCode1.getAbsolutePath(),
+						jsCode2.getAbsolutePath(), cssCode1.getAbsolutePath(), cssCode2.getAbsolutePath(),
+						tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+						phpTokenStrings.get(ct.getSubmissionID1()), phpTokenStrings.get(ct.getSubmissionID2()),
+						jsTokenStrings.get(ct.getSubmissionID1()), jsTokenStrings.get(ct.getSubmissionID2()),
+						cssTokenStrings.get(ct.getSubmissionID1()), cssTokenStrings.get(ct.getSubmissionID2()),
+						ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairWebTemplatePath,
+						syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang, ct.getMatches(),
+						ct.getPhpMatches(), ct.getJsMatches(), ct.getCssMatches());
 			}
 
 			// generate the index HTML
@@ -328,12 +477,16 @@ public class FastComparerWeb {
 	}
 
 	private static ArrayList<ComparisonPairTuple> _compareAndGenerateHTMLReportsJaccard(File[] assignments,
-			ArrayList<ArrayList<FeedbackToken>> tokenStrings, 
-			ArrayList<ArrayList<FeedbackToken>> jsTokenStrings, 
-			ArrayList<ArrayList<FeedbackToken>> cssTokenStrings, 
+			ArrayList<ArrayList<FeedbackToken>> tokenStrings, ArrayList<ArrayList<FeedbackToken>> phpTokenStrings,
+			ArrayList<ArrayList<FeedbackToken>> jsTokenStrings, ArrayList<ArrayList<FeedbackToken>> cssTokenStrings,
 			ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> phpTokenIndexes,
 			ArrayList<HashMap<String, ArrayList<Integer>>> jsTokenIndexes,
-			ArrayList<HashMap<String, ArrayList<Integer>>> cssTokenIndexes, String dirPath, String resultPath,
+			ArrayList<HashMap<String, ArrayList<Integer>>> cssTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfacePhpTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceJsTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceCssTokenIndexes, String dirPath, String resultPath,
 			String progLang, String humanLang, int simThreshold, int minMatchLength, int maxPairs,
 			String languageCode) {
 		// Jaccard
@@ -347,13 +500,15 @@ public class FastComparerWeb {
 					HashMap<String, ArrayList<Integer>> tokenIndex1 = new HashMap<String, ArrayList<Integer>>();
 					HashMap<String, ArrayList<Integer>> tokenIndex2 = new HashMap<String, ArrayList<Integer>>();
 
-					// add all html, js, and cs for token index 1
+					// add all html, php, js, and cs for token index 1
 					tokenIndex1.putAll(tokenIndexes.get(j));
+					tokenIndex1.putAll(phpTokenIndexes.get(j));
 					tokenIndex1.putAll(jsTokenIndexes.get(j));
 					tokenIndex1.putAll(cssTokenIndexes.get(j));
 
-					// add all html, js, and cs for token index 2
+					// add all html, php, js, and cs for token index 2
 					tokenIndex2.putAll(tokenIndexes.get(k));
+					tokenIndex2.putAll(phpTokenIndexes.get(k));
 					tokenIndex2.putAll(jsTokenIndexes.get(k));
 					tokenIndex2.putAll(cssTokenIndexes.get(k));
 
@@ -372,17 +527,44 @@ public class FastComparerWeb {
 						if (code1 == null || code2 == null)
 							continue;
 
+						// if the surface index is not empty, then calculate surface sim
+						double surfaceSimDegree = -1;
+						if (surfaceTokenIndexes.size() > 0) {
+							// generate the matches
+							ArrayList<GSTMatchTuple> surfaceMatches = MatchGenerator.generateMatches(
+									surfaceTokenIndexes.get(j), surfaceTokenIndexes.get(k), minMatchLength);
+							ArrayList<GSTMatchTuple> surfacePhpMatches = MatchGenerator.generateMatches(
+									surfacePhpTokenIndexes.get(j), surfacePhpTokenIndexes.get(k), minMatchLength);
+							ArrayList<GSTMatchTuple> surfaceJsmatches = MatchGenerator.generateMatches(
+									surfaceJsTokenIndexes.get(j), surfaceJsTokenIndexes.get(k), minMatchLength);
+							ArrayList<GSTMatchTuple> surfaceCssmatches = MatchGenerator.generateMatches(
+									surfaceCssTokenIndexes.get(j), surfaceCssTokenIndexes.get(k), minMatchLength);
+
+							// get the sim degree
+							surfaceSimDegree = (int) (((double) (2 * (MatchGenerator.coverage(surfaceMatches)
+									+ MatchGenerator.coverage(surfacePhpMatches)
+									+ MatchGenerator.coverage(surfaceJsmatches)
+									+ MatchGenerator.coverage(surfaceCssmatches)))
+									/ (double) (tokenStrings.get(j).size() + phpTokenStrings.get(j).size()
+											+ jsTokenStrings.get(j).size() + cssTokenStrings.get(j).size()
+											+ tokenStrings.get(k).size() + phpTokenStrings.get(k).size()
+											+ jsTokenStrings.get(k).size() + cssTokenStrings.get(k).size()))
+									* 100);
+						}
+
 						// generate the matches
 						ArrayList<GSTMatchTuple> matches = MatchGenerator.generateMatches(tokenIndexes.get(j),
 								tokenIndexes.get(k), minMatchLength);
+						ArrayList<GSTMatchTuple> phpmatches = MatchGenerator.generateMatches(phpTokenIndexes.get(j),
+								phpTokenIndexes.get(k), minMatchLength);
 						ArrayList<GSTMatchTuple> jsMatches = MatchGenerator.generateMatches(jsTokenIndexes.get(j),
 								jsTokenIndexes.get(k), minMatchLength);
 						ArrayList<GSTMatchTuple> cssMatches = MatchGenerator.generateMatches(cssTokenIndexes.get(j),
 								cssTokenIndexes.get(k), minMatchLength);
 
 						// add the comparison pair
-						codePairs.add(new ComparisonPairTupleWeb(j, k, dirname1, dirname2, simDegree, 1, matches,
-								jsMatches, cssMatches));
+						codePairs.add(new ComparisonPairTupleWeb(j, k, dirname1, dirname2, simDegree, surfaceSimDegree,
+								1, matches, phpmatches, jsMatches, cssMatches));
 					}
 				}
 			}
@@ -403,6 +585,8 @@ public class FastComparerWeb {
 
 				File code1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], progLang);
 				File code2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], progLang);
+				File phpCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "php");
+				File phpCode2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], "php");
 				File jsCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "js");
 				File jsCode2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], "js");
 				File cssCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "css");
@@ -412,14 +596,15 @@ public class FastComparerWeb {
 				ct.setResultedHTMLFilename(syntacticFilename);
 
 				HTMLHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-						jsCode1.getAbsolutePath(), jsCode2.getAbsolutePath(), cssCode1.getAbsolutePath(),
-						cssCode2.getAbsolutePath(), tokenStrings.get(ct.getSubmissionID1()),
-						tokenStrings.get(ct.getSubmissionID2()), jsTokenStrings.get(ct.getSubmissionID1()),
-						jsTokenStrings.get(ct.getSubmissionID2()), cssTokenStrings.get(ct.getSubmissionID1()),
-						cssTokenStrings.get(ct.getSubmissionID2()), ct.getAssignmentName1(), ct.getAssignmentName2(),
-						MainFrame.pairWebTemplatePath, syntacticFilepath, minMatchLength,
-						ct.getSameClusterOccurrences(), humanLang, ct.getMatches(), ct.getJsMatches(),
-						ct.getCssMatches());
+						phpCode1.getAbsolutePath(), phpCode2.getAbsolutePath(), jsCode1.getAbsolutePath(),
+						jsCode2.getAbsolutePath(), cssCode1.getAbsolutePath(), cssCode2.getAbsolutePath(),
+						tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+						phpTokenStrings.get(ct.getSubmissionID1()), phpTokenStrings.get(ct.getSubmissionID2()),
+						jsTokenStrings.get(ct.getSubmissionID1()), jsTokenStrings.get(ct.getSubmissionID2()),
+						cssTokenStrings.get(ct.getSubmissionID1()), cssTokenStrings.get(ct.getSubmissionID2()),
+						ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairWebTemplatePath,
+						syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang, ct.getMatches(),
+						ct.getPhpMatches(), ct.getJsMatches(), ct.getCssMatches());
 			}
 
 			// generate the index HTML
@@ -436,15 +621,19 @@ public class FastComparerWeb {
 	}
 
 	private static ArrayList<ComparisonPairTuple> _compareAndGenerateHTMLReportsCosine(File[] assignments,
-			ArrayList<ArrayList<FeedbackToken>> tokenStrings, 
-			ArrayList<ArrayList<FeedbackToken>> jsTokenStrings, 
-			ArrayList<ArrayList<FeedbackToken>> cssTokenStrings, 
+			ArrayList<ArrayList<FeedbackToken>> tokenStrings, ArrayList<ArrayList<FeedbackToken>> phpTokenStrings,
+			ArrayList<ArrayList<FeedbackToken>> jsTokenStrings, ArrayList<ArrayList<FeedbackToken>> cssTokenStrings,
 			ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> phpTokenIndexes,
 			ArrayList<HashMap<String, ArrayList<Integer>>> jsTokenIndexes,
-			ArrayList<HashMap<String, ArrayList<Integer>>> cssTokenIndexes, String dirPath, String resultPath,
+			ArrayList<HashMap<String, ArrayList<Integer>>> cssTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfacePhpTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceJsTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceCssTokenIndexes, String dirPath, String resultPath,
 			String progLang, String humanLang, int simThreshold, int minMatchLength, int maxPairs,
 			String languageCode) {
-		// Jaccard
+		// Cosine
 		try {
 			// to store the result
 			ArrayList<ComparisonPairTuple> codePairs = new ArrayList<>();
@@ -457,11 +646,13 @@ public class FastComparerWeb {
 
 					// add all html, js, and cs for token index 1
 					tokenIndex1.putAll(tokenIndexes.get(j));
+					tokenIndex1.putAll(phpTokenIndexes.get(j));
 					tokenIndex1.putAll(jsTokenIndexes.get(j));
 					tokenIndex1.putAll(cssTokenIndexes.get(j));
 
 					// add all html, js, and cs for token index 2
 					tokenIndex2.putAll(tokenIndexes.get(k));
+					tokenIndex2.putAll(phpTokenIndexes.get(k));
 					tokenIndex2.putAll(jsTokenIndexes.get(k));
 					tokenIndex2.putAll(cssTokenIndexes.get(k));
 
@@ -479,17 +670,44 @@ public class FastComparerWeb {
 						if (code1 == null || code2 == null)
 							continue;
 
+						// if the surface index is not empty, then calculate surface sim
+						double surfaceSimDegree = -1;
+						if (surfaceTokenIndexes.size() > 0) {
+							// generate the matches
+							ArrayList<GSTMatchTuple> surfaceMatches = MatchGenerator.generateMatches(
+									surfaceTokenIndexes.get(j), surfaceTokenIndexes.get(k), minMatchLength);
+							ArrayList<GSTMatchTuple> surfacePhpMatches = MatchGenerator.generateMatches(
+									surfacePhpTokenIndexes.get(j), surfacePhpTokenIndexes.get(k), minMatchLength);
+							ArrayList<GSTMatchTuple> surfaceJsmatches = MatchGenerator.generateMatches(
+									surfaceJsTokenIndexes.get(j), surfaceJsTokenIndexes.get(k), minMatchLength);
+							ArrayList<GSTMatchTuple> surfaceCssmatches = MatchGenerator.generateMatches(
+									surfaceCssTokenIndexes.get(j), surfaceCssTokenIndexes.get(k), minMatchLength);
+
+							// get the sim degree
+							surfaceSimDegree = (int) (((double) (2 * (MatchGenerator.coverage(surfaceMatches)
+									+ MatchGenerator.coverage(surfacePhpMatches)
+									+ MatchGenerator.coverage(surfaceJsmatches)
+									+ MatchGenerator.coverage(surfaceCssmatches)))
+									/ (double) (tokenStrings.get(j).size() + phpTokenStrings.get(j).size()
+											+ jsTokenStrings.get(j).size() + cssTokenStrings.get(j).size()
+											+ tokenStrings.get(k).size() + phpTokenStrings.get(k).size()
+											+ jsTokenStrings.get(k).size() + cssTokenStrings.get(k).size()))
+									* 100);
+						}
+
 						// generate the matches
 						ArrayList<GSTMatchTuple> matches = MatchGenerator.generateMatches(tokenIndexes.get(j),
 								tokenIndexes.get(k), minMatchLength);
+						ArrayList<GSTMatchTuple> phpMatches = MatchGenerator.generateMatches(phpTokenIndexes.get(j),
+								phpTokenIndexes.get(k), minMatchLength);
 						ArrayList<GSTMatchTuple> jsMatches = MatchGenerator.generateMatches(jsTokenIndexes.get(j),
 								jsTokenIndexes.get(k), minMatchLength);
 						ArrayList<GSTMatchTuple> cssMatches = MatchGenerator.generateMatches(cssTokenIndexes.get(j),
 								cssTokenIndexes.get(k), minMatchLength);
 
 						// add the comparison pair
-						codePairs.add(new ComparisonPairTupleWeb(j, k, dirname1, dirname2, simDegree, 1, matches,
-								jsMatches, cssMatches));
+						codePairs.add(new ComparisonPairTupleWeb(j, k, dirname1, dirname2, simDegree, surfaceSimDegree,
+								1, matches, phpMatches, jsMatches, cssMatches));
 					}
 				}
 			}
@@ -510,6 +728,8 @@ public class FastComparerWeb {
 
 				File code1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], progLang);
 				File code2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], progLang);
+				File phpCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "php");
+				File phpCode2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], "php");
 				File jsCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "js");
 				File jsCode2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], "js");
 				File cssCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "css");
@@ -519,14 +739,15 @@ public class FastComparerWeb {
 				ct.setResultedHTMLFilename(syntacticFilename);
 
 				HTMLHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-						jsCode1.getAbsolutePath(), jsCode2.getAbsolutePath(), cssCode1.getAbsolutePath(),
-						cssCode2.getAbsolutePath(), tokenStrings.get(ct.getSubmissionID1()),
-						tokenStrings.get(ct.getSubmissionID2()), jsTokenStrings.get(ct.getSubmissionID1()),
-						jsTokenStrings.get(ct.getSubmissionID2()), cssTokenStrings.get(ct.getSubmissionID1()),
-						cssTokenStrings.get(ct.getSubmissionID2()),ct.getAssignmentName1(), ct.getAssignmentName2(),
-						MainFrame.pairWebTemplatePath, syntacticFilepath, minMatchLength,
-						ct.getSameClusterOccurrences(), humanLang, ct.getMatches(), ct.getJsMatches(),
-						ct.getCssMatches());
+						phpCode1.getAbsolutePath(), phpCode2.getAbsolutePath(), jsCode1.getAbsolutePath(),
+						jsCode2.getAbsolutePath(), cssCode1.getAbsolutePath(), cssCode2.getAbsolutePath(),
+						tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+						phpTokenStrings.get(ct.getSubmissionID1()), phpTokenStrings.get(ct.getSubmissionID2()),
+						jsTokenStrings.get(ct.getSubmissionID1()), jsTokenStrings.get(ct.getSubmissionID2()),
+						cssTokenStrings.get(ct.getSubmissionID1()), cssTokenStrings.get(ct.getSubmissionID2()),
+						ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairWebTemplatePath,
+						syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang, ct.getMatches(), ct.getPhpMatches(),
+						ct.getJsMatches(), ct.getCssMatches());
 			}
 
 			// generate the index HTML
@@ -543,12 +764,16 @@ public class FastComparerWeb {
 	}
 
 	private static ArrayList<ComparisonPairTuple> _compareAndGenerateHTMLReportsMinHash(File[] assignments,
-			ArrayList<ArrayList<FeedbackToken>> tokenStrings, 
-			ArrayList<ArrayList<FeedbackToken>> jsTokenStrings, 
-			ArrayList<ArrayList<FeedbackToken>> cssTokenStrings, 
+			ArrayList<ArrayList<FeedbackToken>> tokenStrings, ArrayList<ArrayList<FeedbackToken>> phpTokenStrings,
+			ArrayList<ArrayList<FeedbackToken>> jsTokenStrings, ArrayList<ArrayList<FeedbackToken>> cssTokenStrings,
 			ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> phpTokenIndexes,
 			ArrayList<HashMap<String, ArrayList<Integer>>> jsTokenIndexes,
-			ArrayList<HashMap<String, ArrayList<Integer>>> cssTokenIndexes, ArrayList<String> vectorHeader,
+			ArrayList<HashMap<String, ArrayList<Integer>>> cssTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfacePhpTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceJsTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceCssTokenIndexes, ArrayList<String> vectorHeader,
 			String dirPath, String resultPath, String progLang, String humanLang, int simThreshold, int minMatchLength,
 			int maxPairs, String languageCode, int numClusters, int numStages) {
 		// MinHash algorithm
@@ -563,6 +788,7 @@ public class FastComparerWeb {
 				// generate the vector from three indexes, vectorHeader already merge three
 				// indexes
 				boolean[] v = JaccardCalculator.generateBooleanVectorFromTokenString(tokenIndexes.get(i), vectorHeader);
+				v = JaccardCalculator.updateBooleanVectorFromTokenString(v, phpTokenIndexes.get(i), vectorHeader);
 				v = JaccardCalculator.updateBooleanVectorFromTokenString(v, jsTokenIndexes.get(i), vectorHeader);
 				v = JaccardCalculator.updateBooleanVectorFromTokenString(v, cssTokenIndexes.get(i), vectorHeader);
 				tokenVectors.add(v);
@@ -622,16 +848,20 @@ public class FastComparerWeb {
 				// generate the matches
 				ArrayList<GSTMatchTuple> matches = MatchGenerator.generateMatches(tokenIndexes.get(submissionID1),
 						tokenIndexes.get(submissionID2), minMatchLength);
+				ArrayList<GSTMatchTuple> phpmatches = MatchGenerator.generateMatches(phpTokenIndexes.get(submissionID1),
+						phpTokenIndexes.get(submissionID2), minMatchLength);
 				ArrayList<GSTMatchTuple> jsmatches = MatchGenerator.generateMatches(jsTokenIndexes.get(submissionID1),
 						jsTokenIndexes.get(submissionID2), minMatchLength);
 				ArrayList<GSTMatchTuple> cssmatches = MatchGenerator.generateMatches(cssTokenIndexes.get(submissionID1),
 						cssTokenIndexes.get(submissionID2), minMatchLength);
 
 				// get the sim degree
-				int simDegree = (int) (((double) (2 * (MatchGenerator.coverage(matches)
-						+ MatchGenerator.coverage(jsmatches) + MatchGenerator.coverage(cssmatches)))
-						/ (double) (tokenStrings.get(submissionID1).size() + jsTokenStrings.get(submissionID1).size()
-								+ cssTokenStrings.get(submissionID1).size() + tokenStrings.get(submissionID2).size()
+				int simDegree = (int) (((double) (2
+						* (MatchGenerator.coverage(matches) + MatchGenerator.coverage(phpmatches)
+								+ MatchGenerator.coverage(jsmatches) + MatchGenerator.coverage(cssmatches)))
+						/ (double) (tokenStrings.get(submissionID1).size() + phpTokenStrings.get(submissionID1).size()
+								+ jsTokenStrings.get(submissionID1).size() + cssTokenStrings.get(submissionID1).size()
+								+ tokenStrings.get(submissionID2).size() + phpTokenStrings.get(submissionID2).size()
 								+ jsTokenStrings.get(submissionID2).size() + cssTokenStrings.get(submissionID2).size()))
 						* 100);
 				if (simDegree >= simThreshold) {
@@ -645,17 +875,41 @@ public class FastComparerWeb {
 					if (code1 == null || code2 == null)
 						continue;
 
-					// generate the matches
-					matches = MatchGenerator.generateMatches(tokenIndexes.get(submissionID1),
-							tokenIndexes.get(submissionID2), minMatchLength);
-					ArrayList<GSTMatchTuple> jsMatches = MatchGenerator.generateMatches(
-							jsTokenIndexes.get(submissionID1), jsTokenIndexes.get(submissionID2), minMatchLength);
-					ArrayList<GSTMatchTuple> cssMatches = MatchGenerator.generateMatches(
-							cssTokenIndexes.get(submissionID1), cssTokenIndexes.get(submissionID2), minMatchLength);
+					// if the surface index is not empty, then calculate surface sim
+					double surfaceSimDegree = -1;
+					if (surfaceTokenIndexes.size() > 0) {
+						// generate the matches
+						ArrayList<GSTMatchTuple> surfaceMatches = MatchGenerator.generateMatches(
+								surfaceTokenIndexes.get(submissionID1), surfaceTokenIndexes.get(submissionID2),
+								minMatchLength);
+						ArrayList<GSTMatchTuple> surfacePhpMatches = MatchGenerator.generateMatches(
+								surfacePhpTokenIndexes.get(submissionID1), surfacePhpTokenIndexes.get(submissionID2),
+								minMatchLength);
+						ArrayList<GSTMatchTuple> surfaceJsmatches = MatchGenerator.generateMatches(
+								surfaceJsTokenIndexes.get(submissionID1), surfaceJsTokenIndexes.get(submissionID2),
+								minMatchLength);
+						ArrayList<GSTMatchTuple> surfaceCssmatches = MatchGenerator.generateMatches(
+								surfaceCssTokenIndexes.get(submissionID1), surfaceCssTokenIndexes.get(submissionID2),
+								minMatchLength);
 
+						// get the sim degree
+						surfaceSimDegree = (int) (((double) (2 * (MatchGenerator.coverage(surfaceMatches)
+								+ MatchGenerator.coverage(surfacePhpMatches) + MatchGenerator.coverage(surfaceJsmatches)
+								+ MatchGenerator.coverage(surfaceCssmatches)))
+								/ (double) (tokenStrings.get(submissionID1).size()
+										+ phpTokenStrings.get(submissionID1).size()
+										+ jsTokenStrings.get(submissionID1).size()
+										+ cssTokenStrings.get(submissionID1).size()
+										+ tokenStrings.get(submissionID2).size()
+										+ phpTokenStrings.get(submissionID2).size()
+										+ jsTokenStrings.get(submissionID2).size()
+										+ cssTokenStrings.get(submissionID2).size()))
+								* 100);
+					}
 					// add the comparison pair
 					ComparisonPairTuple ct = new ComparisonPairTupleWeb(submissionID1, submissionID2, dirname1,
-							dirname2, simDegree, en.getValue(), matches, jsMatches, cssMatches);
+							dirname2, simDegree, surfaceSimDegree, en.getValue(), matches, phpmatches, jsmatches,
+							cssmatches);
 					codePairs.add(ct);
 				}
 			}
@@ -676,6 +930,8 @@ public class FastComparerWeb {
 
 				File code1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], progLang);
 				File code2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], progLang);
+				File phpCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "php");
+				File phpCode2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], "php");
 				File jsCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "js");
 				File jsCode2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], "js");
 				File cssCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "css");
@@ -685,14 +941,15 @@ public class FastComparerWeb {
 				ct.setResultedHTMLFilename(syntacticFilename);
 
 				HTMLHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-						jsCode1.getAbsolutePath(), jsCode2.getAbsolutePath(), cssCode1.getAbsolutePath(),
-						cssCode2.getAbsolutePath(), tokenStrings.get(ct.getSubmissionID1()),
-						tokenStrings.get(ct.getSubmissionID2()), jsTokenStrings.get(ct.getSubmissionID1()),
-						jsTokenStrings.get(ct.getSubmissionID2()), cssTokenStrings.get(ct.getSubmissionID1()),
-						cssTokenStrings.get(ct.getSubmissionID2()), ct.getAssignmentName1(), ct.getAssignmentName2(),
-						MainFrame.pairWebTemplatePath, syntacticFilepath, minMatchLength,
-						ct.getSameClusterOccurrences(), humanLang, ct.getMatches(), ct.getJsMatches(),
-						ct.getCssMatches());
+						phpCode1.getAbsolutePath(), phpCode2.getAbsolutePath(), jsCode1.getAbsolutePath(),
+						jsCode2.getAbsolutePath(), cssCode1.getAbsolutePath(), cssCode2.getAbsolutePath(),
+						tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+						phpTokenStrings.get(ct.getSubmissionID1()), phpTokenStrings.get(ct.getSubmissionID2()),
+						jsTokenStrings.get(ct.getSubmissionID1()), jsTokenStrings.get(ct.getSubmissionID2()),
+						cssTokenStrings.get(ct.getSubmissionID1()), cssTokenStrings.get(ct.getSubmissionID2()),
+						ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairWebTemplatePath,
+						syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang, ct.getMatches(),
+						ct.getPhpMatches(), ct.getJsMatches(), ct.getCssMatches());
 			}
 
 			// generate the index HTML
@@ -709,12 +966,16 @@ public class FastComparerWeb {
 	}
 
 	private static ArrayList<ComparisonPairTuple> _compareAndGenerateHTMLReportsSuoerBit(File[] assignments,
-			ArrayList<ArrayList<FeedbackToken>> tokenStrings, 
-			ArrayList<ArrayList<FeedbackToken>> jsTokenStrings, 
-			ArrayList<ArrayList<FeedbackToken>> cssTokenStrings, 
+			ArrayList<ArrayList<FeedbackToken>> tokenStrings, ArrayList<ArrayList<FeedbackToken>> phpTokenStrings,
+			ArrayList<ArrayList<FeedbackToken>> jsTokenStrings, ArrayList<ArrayList<FeedbackToken>> cssTokenStrings,
 			ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> phpTokenIndexes,
 			ArrayList<HashMap<String, ArrayList<Integer>>> jsTokenIndexes,
-			ArrayList<HashMap<String, ArrayList<Integer>>> cssTokenIndexes, ArrayList<String> vectorHeader,
+			ArrayList<HashMap<String, ArrayList<Integer>>> cssTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfacePhpTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceJsTokenIndexes,
+			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceCssTokenIndexes, ArrayList<String> vectorHeader,
 			String dirPath, String resultPath, String progLang, String humanLang, int simThreshold, int minMatchLength,
 			int maxPairs, String languageCode, int numClusters, int numStages) {
 		// Super-Bit algorithm
@@ -727,6 +988,7 @@ public class FastComparerWeb {
 			for (int i = 0; i < tokenIndexes.size(); i++) {
 				double[] v = CosineCalculator.generateOccurrenceVectorFromTokenString(tokenIndexes.get(i),
 						vectorHeader);
+				v = CosineCalculator.updateOccurrenceVectorFromTokenString(v, phpTokenIndexes.get(i), vectorHeader);
 				v = CosineCalculator.updateOccurrenceVectorFromTokenString(v, jsTokenIndexes.get(i), vectorHeader);
 				v = CosineCalculator.updateOccurrenceVectorFromTokenString(v, cssTokenIndexes.get(i), vectorHeader);
 				tokenVectors.add(v);
@@ -786,16 +1048,20 @@ public class FastComparerWeb {
 				// generate the matches
 				ArrayList<GSTMatchTuple> matches = MatchGenerator.generateMatches(tokenIndexes.get(submissionID1),
 						tokenIndexes.get(submissionID2), minMatchLength);
+				ArrayList<GSTMatchTuple> phpmatches = MatchGenerator.generateMatches(phpTokenIndexes.get(submissionID1),
+						phpTokenIndexes.get(submissionID2), minMatchLength);
 				ArrayList<GSTMatchTuple> jsmatches = MatchGenerator.generateMatches(jsTokenIndexes.get(submissionID1),
 						jsTokenIndexes.get(submissionID2), minMatchLength);
 				ArrayList<GSTMatchTuple> cssmatches = MatchGenerator.generateMatches(cssTokenIndexes.get(submissionID1),
 						cssTokenIndexes.get(submissionID2), minMatchLength);
 
 				// get the sim degree
-				int simDegree = (int) (((double) (2 * (MatchGenerator.coverage(matches)
-						+ MatchGenerator.coverage(jsmatches) + MatchGenerator.coverage(cssmatches)))
-						/ (double) (tokenStrings.get(submissionID1).size() + jsTokenStrings.get(submissionID1).size()
-								+ cssTokenStrings.get(submissionID1).size() + tokenStrings.get(submissionID2).size()
+				int simDegree = (int) (((double) (2
+						* (MatchGenerator.coverage(matches) + MatchGenerator.coverage(phpmatches)
+								+ MatchGenerator.coverage(jsmatches) + MatchGenerator.coverage(cssmatches)))
+						/ (double) (tokenStrings.get(submissionID1).size() + phpTokenStrings.get(submissionID1).size()
+								+ jsTokenStrings.get(submissionID1).size() + cssTokenStrings.get(submissionID1).size()
+								+ tokenStrings.get(submissionID2).size() + phpTokenStrings.get(submissionID2).size()
 								+ jsTokenStrings.get(submissionID2).size() + cssTokenStrings.get(submissionID2).size()))
 						* 100);
 
@@ -810,17 +1076,42 @@ public class FastComparerWeb {
 					if (code1 == null || code2 == null)
 						continue;
 
-					// generate the matches
-					matches = MatchGenerator.generateMatches(tokenIndexes.get(submissionID1),
-							tokenIndexes.get(submissionID2), minMatchLength);
-					ArrayList<GSTMatchTuple> jsMatches = MatchGenerator.generateMatches(
-							jsTokenIndexes.get(submissionID1), jsTokenIndexes.get(submissionID2), minMatchLength);
-					ArrayList<GSTMatchTuple> cssMatches = MatchGenerator.generateMatches(
-							cssTokenIndexes.get(submissionID1), cssTokenIndexes.get(submissionID2), minMatchLength);
+					// if the surface index is not empty, then calculate surface sim
+					double surfaceSimDegree = -1;
+					if (surfaceTokenIndexes.size() > 0) {
+						// generate the matches
+						ArrayList<GSTMatchTuple> surfaceMatches = MatchGenerator.generateMatches(
+								surfaceTokenIndexes.get(submissionID1), surfaceTokenIndexes.get(submissionID2),
+								minMatchLength);
+						ArrayList<GSTMatchTuple> surfacePhpMatches = MatchGenerator.generateMatches(
+								surfacePhpTokenIndexes.get(submissionID1), surfacePhpTokenIndexes.get(submissionID2),
+								minMatchLength);
+						ArrayList<GSTMatchTuple> surfaceJsmatches = MatchGenerator.generateMatches(
+								surfaceJsTokenIndexes.get(submissionID1), surfaceJsTokenIndexes.get(submissionID2),
+								minMatchLength);
+						ArrayList<GSTMatchTuple> surfaceCssmatches = MatchGenerator.generateMatches(
+								surfaceCssTokenIndexes.get(submissionID1), surfaceCssTokenIndexes.get(submissionID2),
+								minMatchLength);
+
+						// get the sim degree
+						surfaceSimDegree = (int) (((double) (2 * (MatchGenerator.coverage(surfaceMatches)
+								+ MatchGenerator.coverage(surfacePhpMatches) + MatchGenerator.coverage(surfaceJsmatches)
+								+ MatchGenerator.coverage(surfaceCssmatches)))
+								/ (double) (tokenStrings.get(submissionID1).size()
+										+ phpTokenStrings.get(submissionID1).size()
+										+ jsTokenStrings.get(submissionID1).size()
+										+ cssTokenStrings.get(submissionID1).size()
+										+ tokenStrings.get(submissionID2).size()
+										+ phpTokenStrings.get(submissionID2).size()
+										+ jsTokenStrings.get(submissionID2).size()
+										+ cssTokenStrings.get(submissionID2).size()))
+								* 100);
+					}
 
 					// add the comparison pair
 					ComparisonPairTuple ct = new ComparisonPairTupleWeb(submissionID1, submissionID2, dirname1,
-							dirname2, simDegree, en.getValue(), matches, jsMatches, cssMatches);
+							dirname2, simDegree, surfaceSimDegree, en.getValue(), matches, phpmatches, jsmatches,
+							cssmatches);
 					codePairs.add(ct);
 				}
 			}
@@ -841,6 +1132,8 @@ public class FastComparerWeb {
 
 				File code1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], progLang);
 				File code2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], progLang);
+				File phpCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "php");
+				File phpCode2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], "php");
 				File jsCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "js");
 				File jsCode2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], "js");
 				File cssCode1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], "css");
@@ -849,15 +1142,17 @@ public class FastComparerWeb {
 				// set the path to comparison pair tuple
 				ct.setResultedHTMLFilename(syntacticFilename);
 
+				// need to be fixed
 				HTMLHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-						jsCode1.getAbsolutePath(), jsCode2.getAbsolutePath(), cssCode1.getAbsolutePath(),
-						cssCode2.getAbsolutePath(), tokenStrings.get(ct.getSubmissionID1()),
-						tokenStrings.get(ct.getSubmissionID2()), jsTokenStrings.get(ct.getSubmissionID1()),
-						jsTokenStrings.get(ct.getSubmissionID2()), cssTokenStrings.get(ct.getSubmissionID1()),
-						cssTokenStrings.get(ct.getSubmissionID2()), ct.getAssignmentName1(), ct.getAssignmentName2(),
-						MainFrame.pairWebTemplatePath, syntacticFilepath, minMatchLength,
-						ct.getSameClusterOccurrences(), humanLang, ct.getMatches(), ct.getJsMatches(),
-						ct.getCssMatches());
+						phpCode1.getAbsolutePath(), phpCode2.getAbsolutePath(), jsCode1.getAbsolutePath(),
+						jsCode2.getAbsolutePath(), cssCode1.getAbsolutePath(), cssCode2.getAbsolutePath(),
+						tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+						phpTokenStrings.get(ct.getSubmissionID1()), phpTokenStrings.get(ct.getSubmissionID2()),
+						jsTokenStrings.get(ct.getSubmissionID1()), jsTokenStrings.get(ct.getSubmissionID2()),
+						cssTokenStrings.get(ct.getSubmissionID1()), cssTokenStrings.get(ct.getSubmissionID2()),
+						ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairWebTemplatePath,
+						syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang, ct.getMatches(),
+						ct.getPhpMatches(), ct.getJsMatches(), ct.getCssMatches());
 			}
 
 			// generate the index HTML

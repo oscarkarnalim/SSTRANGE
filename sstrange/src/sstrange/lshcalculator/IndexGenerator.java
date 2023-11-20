@@ -7,19 +7,24 @@ import java.util.HashSet;
 import sstrange.token.FeedbackToken;
 
 public class IndexGenerator {
-	public static HashMap<String, ArrayList<Integer>> generateIndex(ArrayList<FeedbackToken> in, int ngram) {
+	public static HashMap<String, ArrayList<Integer>> generateIndex(ArrayList<FeedbackToken> in, int ngram,
+			boolean isSensitive) {
 		/*
 		 * Convert given token tuple list to index-like representation. Return a hash
-		 * map with the overlapping n-gram contents as the keys. Per key, the value is a list of
-		 * integer representing starting index of that n-gram in the token list
+		 * map with the overlapping n-gram contents as the keys. Per key, the value is a
+		 * list of integer representing starting index of that n-gram in the token list.
+		 * If it is sensitive mode, return the default content.
 		 */
 
 		HashMap<String, ArrayList<Integer>> out = new HashMap<String, ArrayList<Integer>>();
-		for (int i = 0; i < in.size() - ngram + 1; i++) { 
+		for (int i = 0; i < in.size() - ngram + 1; i++) {
 			// get key as a form of ngram
 			String key = "";
 			for (int j = 0; j < ngram; j++) {
-				key = key + in.get(i + j).getContentForComparison();
+				if (isSensitive)
+					key = key + in.get(i + j).getContent();
+				else
+					key = key + in.get(i + j).getContentForComparison();
 				if (j != ngram - 1)
 					key = key + "|";
 			}
@@ -35,7 +40,7 @@ public class IndexGenerator {
 			// add the position
 			positions.add(i);
 		}
-		
+
 		// return the result
 		return out;
 	}

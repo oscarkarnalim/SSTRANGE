@@ -37,9 +37,22 @@ public class CodeMerger {
 
 				// if the extension is html
 				if (ext.equalsIgnoreCase("html")) {
-					// merge also javascript and css files
+					// merge also php, javascript, and css files
+					
+					// php
+					outputFile = new File(
+							outputDir.getAbsolutePath() + File.separator + "[merged] " + sdir.getName() + ".php");
+					try {
+						FileWriter ffw = new FileWriter(outputFile);
+						BufferedWriter fw = new BufferedWriter(ffw);
+						mergeSourceCodeFiles(sdir, "php", fw, sdir.getAbsolutePath().length());
+						fw.close();
+						ffw.close();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 
-					// javascript
+					// (external) javascript
 					outputFile = new File(
 							outputDir.getAbsolutePath() + File.separator + "[merged] " + sdir.getName() + ".js");
 					try {
@@ -52,7 +65,7 @@ public class CodeMerger {
 						e.printStackTrace();
 					}
 
-					// css
+					// (external) css
 					outputFile = new File(
 							outputDir.getAbsolutePath() + File.separator + "[merged] " + sdir.getName() + ".css");
 					try {
@@ -77,8 +90,8 @@ public class CodeMerger {
 			}
 		} else {
 			String name = sfile.getName();
-			// if the file does not end with the extension, ignore
-			if (name.toLowerCase().endsWith(ext) == false)
+			// if the file does not end with the extension OR it starts with ".", ignore
+			if (name.toLowerCase().endsWith(ext) == false || name.startsWith("."))
 				return;
 
 			// read the file and write it in filewriter
@@ -117,6 +130,15 @@ public class CodeMerger {
 					fw.write("<!-- " + path + " -->" + System.lineSeparator());
 					fw.write(pattern);
 				} else if (ext.endsWith("js")) {
+					String pattern = "/* ";
+					for (int i = 0; i < path.length(); i++)
+						pattern += "=";
+					pattern += " */" + System.lineSeparator();
+
+					fw.write(pattern);
+					fw.write("/* " + path + " */" + System.lineSeparator());
+					fw.write(pattern);
+				}else if (ext.endsWith("php")) {
 					String pattern = "/* ";
 					for (int i = 0; i < path.length(); i++)
 						pattern += "=";
