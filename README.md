@@ -124,7 +124,7 @@ Bagaimana kesamaan kode dapat dideteksi. Pilihannya antara lain MinHash, Super-B
 
 <assessment path>: path direktori absolut (String) 
 <submission type>: "file", "dir", atau "zip" 
-<submission language>: "java", "py", "web", "dart", or "csharp". 
+<submission language>: "java", "py", "web", "dart", atau "csharp". 
 <explanation language>: "en" atau "id" 
 <minimum similarity threshold>: bilangan bulat tidak negatif 0-100 
 <maximum reported submission pairs>: bilangan bulat positif
