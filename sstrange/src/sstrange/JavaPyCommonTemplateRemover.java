@@ -25,6 +25,7 @@ public class JavaPyCommonTemplateRemover {
 		 * this method remove common and template code. It then returns the new
 		 * assignment path as the output
 		 */
+		
 
 		String codeToBeRemovedFilePath = assignmentParentDirPath + File.separator + "[code to be removed] "
 				+ assignmentName + ".out";
@@ -41,9 +42,8 @@ public class JavaPyCommonTemplateRemover {
 				e.printStackTrace();
 			}
 		}
-
 		// base code / template code
-		if (templateDirPath.length() > 0) {
+		if (templateDirPath.length() > 0 && !templateDirPath.equals("none")) {
 			// embed the template code
 			File codeToBeRemovedFile = new File(codeToBeRemovedFilePath);
 
@@ -84,7 +84,7 @@ public class JavaPyCommonTemplateRemover {
 
 		// remove both common and template code
 		File codeToBeRemovedFile = new File(codeToBeRemovedFilePath);
-		if (templateDirPath.length() > 0 || isCommonCodeAllowed == false) {
+		if ((templateDirPath.length() > 0  && !templateDirPath.equals("none")) || isCommonCodeAllowed == false) {
 			if (codeToBeRemovedFile.exists()) {
 				String newAssignmentPath = assignmentParentDirPath + File.separator + "[templateremoved] "
 						+ assignmentName;

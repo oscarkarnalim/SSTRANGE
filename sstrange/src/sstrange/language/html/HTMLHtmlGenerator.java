@@ -157,7 +157,7 @@ public class HTMLHtmlGenerator {
 			FeedbackMessage fm = gSyntaxMessage.get(i);
 			fm.setVisualId("s" + mode + (i + 1));
 		}
-
+		
 		code1 = readCode1(filepath1, tableId, gSyntaxMessage);
 		if (code1.trim().length() == 0)
 			code1 = noteForEmptyFiletype;
@@ -183,6 +183,11 @@ public class HTMLHtmlGenerator {
 	 */
 	private static String readCode1(String filepath, String tableId, ArrayList<FeedbackMessage> gSyntaxMessage)
 			throws Exception {
+		// if the file does not exist, return empty string
+		if(filepath == null) {
+			return "";
+		}
+		
 		// for source and target id on code
 		char sourceId = 'a';
 		char targetId = 'b';

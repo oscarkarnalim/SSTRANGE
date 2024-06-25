@@ -7,14 +7,17 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.ArrayList;
 
+import sstrange.anomaly.AnomalyTuple;
 import sstrange.matchgenerator.ComparisonPairTuple;
 
 public class IndexHTMLGenerator {
 
 	public static void generateHtml(String assignmentRootPath, ArrayList<ComparisonPairTuple> codePairs,
-			String coreTemplateHTMLPath, String outputDirPath, double threshold, String languageCode) throws Exception {
+			ArrayList<AnomalyTuple> anomalies, String coreTemplateHTMLPath, String outputDirPath, double threshold,
+			double disThreshold, String languageCode) throws Exception {
 
 		String tableContent = getTableContent(codePairs, languageCode);
+		String dissimTableContent = getDissimTableContent(anomalies, languageCode);
 
 		String logoHeader = "<div class=\"embedimage\" style=\"width:15%;margin-left:0px;\">\r\n"
 				+ "					<img class=\"embedimage\" src=\"strange_html_layout_additional_files/logo.png\" alt=\"logo STRANGE\">\r\n"
@@ -49,8 +52,16 @@ public class IndexHTMLGenerator {
 				line = line.replace("@threshold", String.format("%.0f", threshold));
 			}
 
+			if (line.contains("@disthreshold")) {
+				line = line.replace("@disthreshold", String.format("%.0f", disThreshold));
+			}
+
 			if (line.contains("@tablecontent")) {
 				line = line.replace("@tablecontent", tableContent);
+			}
+
+			if (line.contains("@dissimaitablecontent")) {
+				line = line.replace("@dissimaitablecontent", dissimTableContent);
 			}
 
 			if (line.contains("@explanation"))
@@ -67,14 +78,13 @@ public class IndexHTMLGenerator {
 	private static String getExplanationContentID() {
 		String s = "";
 
-		s += "<ul>";
-		s += "<li>Kesamaan yang dilaporkan adalah kesamaan rerata, yang mempertimbangkan semua perbedaan dalam perhitungannya.</li>";
-		s += "<li>Kesamaan standar mengabaikan perbedaan di komentar, spasi, dan nilai konstanta. "
-				+ "Perbedaan di nama identifier (misal variabel atau fungsi) diabaikan di Java, Python, C#, PHP, JavaScript dan CSS (terbatas pada nama variabel dan selectors). "
-				+ "Perbedaan di konten teks, tag script, tag style, dan kapitalisasi di nama tag diabaikan di HTML. "
-				+ "Perbedaan di tipe data primitif diabaikan di Java.</li>";
-		s += "<li>Kesamaan sensitif memperhitungkan token apa adanya tanpa generalisasi.</li>";
-		s = s + "</ul>\n";
+		s += "<ul>\r\n"
+				+ "				<li>Plagiarisme konvensional dapat diidentifikasi melalui kumpulan karya yang sama (similarity). </li>\r\n"
+				+ "				<li>Kecurangan berbasis kontrak dan plagiarisme yang sangat disamarkan dapat diidentifikasi dari kumpulan karya yang terlalu unik (uniqueness). </li>\r\n"
+				+ "				<li>Plagiarisme dengan bantuan kecerdasan buatan dapat diidentifikasi dari kumpulan karya yang terlalu unik (uniqueness) atau yang terlalu sama dengan sampel karya kecerdasan buatan (AI sim). </li>\r\n"
+				+ "				<li>Kolom kosong artinya hasil tidak relevan dengan karya.</li>\r\n"
+				+ "				<li>MinHash dan Super-Bit bisa gagal mengenali karya yang sama karena mekanisme bucket.</li>\r\n"
+				+ "				</ul>";
 
 		return s;
 	}
@@ -82,14 +92,13 @@ public class IndexHTMLGenerator {
 	private static String getExplanationContentEn() {
 		String s = "";
 
-		s += "<ul>";
-		s += "<li>The reported similarity is average similarity, which considers all differences in its calculation.</li>";
-		s += "<li>Standard similarity ignores differences in comments, white space, and constants. "
-				+ "Differences in identifier names (e.g., variables or functions) are ignored in Java, Python, C#, PHP, JavaScript and CSS (limited to variable names and selectors). "
-				+ "Differences in text content, script tag, style tag, and capitalisation in tag names are ignored in HTML. "
-				+ "Differences in primitive data types are ignored in Java.</li>";
-		s += "<li>Sensitive similarity considers all tokens as they are without generalisation.</li>";
-		s = s + "</ul>\n";
+		s += "<ul>\r\n"
+				+ "				<li>Conventional plagiarism can be observed from similar submissions. </li>\r\n"
+				+ "				<li>Contract cheating and highly disguised plagiarism can be observed from overly-unique submissions. </li>\r\n"
+				+ "				<li>AI assisted plagiarism can be observed from overly-unique submissions or AI-similar submissions. </li>\r\n"
+				+ "				<li>Empty fields mean not applicable.</li>\r\n"
+				+ "				<li>MinHash and Super-Bit might fail to recognise similar submissions due to their bucketing mechanism.</li>\r\n"
+				+ "				</ul>";
 
 		return s;
 	}
@@ -109,9 +118,9 @@ public class IndexHTMLGenerator {
 	}
 
 	private static String getTableContent(ArrayList<ComparisonPairTuple> codePairs, String languageCode) {
-		String textForObserve = "observe";
+		String textForObserve = "detail";
 		if (languageCode.equals("id"))
-			textForObserve = "amati";
+			textForObserve = "detil";
 
 		String s = "";
 		int numID = 0;
@@ -121,17 +130,61 @@ public class IndexHTMLGenerator {
 
 			// generate the string
 			s += "<tr id=\"" + entryID + "\" onclick=\"selectRow('" + entryID + "','sumtablecontent')\">";
-			s += ("\n\t<td><a>" + ct.getAssignmentName1() + "-" + ct.getAssignmentName2() + "</a></td>");
+			s += ("\n\t<td class='first'><a>" + ct.getAssignmentName1() + " and " + ct.getAssignmentName2()
+					+ "</a></td>");
 			s += ("\n\t<td>" + String.format("%.0f", ct.getSyntaxSimResult()) + " %</td>");
 			if (ct.getSurfaceSimResult() != -1)
 				// if surface is calculated, the overall result is printed here
-				s += ("\n\t<td>" + String.format("%.0f",ct.getSimResult()) + "%</td>");
+				s += ("\n\t<td>" + String.format("%.0f", ct.getSimResult()) + "%</td>");
 			else
-				s += ("\n\t<td>NA</td>");
+				s += ("\n\t<td></td>");
 
 			s += ("\n\t<td><button onclick=\"window.open('" + ct.getResultedHTMLFilename() + "', '_self');\">"
 					+ textForObserve + "</button></td>");
+
 			s += "\n</tr>\n";
+
+			// increment number for ID
+			numID++;
+		}
+		return s;
+	}
+
+	private static String getDissimTableContent(ArrayList<AnomalyTuple> anomalies, String languageCode) {
+		String textForObserve = "detail";
+		if (languageCode.equals("id"))
+			textForObserve = "detil";
+		String aiTextForObserve = "AI sim";
+		if (languageCode.equals("id"))
+			aiTextForObserve = "mirip AI";
+
+		String s = "";
+		int numID = 0;
+		for (AnomalyTuple an : anomalies) {
+			// generate the ID
+			String entryID = "a" + numID;
+
+			// generate the string
+			s += "<tr id=\"" + entryID + "\" onclick=\"selectRow('" + entryID + "','sumtablecontentdissimai')\">";
+			s += ("\n\t<td class='first'><a>" + an.getAssignmentName() + "</a></td>");
+			if (an.getDissimResult() == -1)
+				s += ("\n\t<td></td>");
+			else
+				s += ("\n\t<td>" + String.format("%.0f", an.getDissimResult()) + " %</td>");
+			if (an.getAiSim() == -1)
+				s += ("\n\t<td></td>");
+			else
+				s += ("\n\t<td>" + String.format("%.0f", an.getAiSim()) + " %</td>");
+
+			s += ("\n\t<td><button onclick=\"window.open('" + an.getResultedHTMLFilename() + "', '_self');\">"
+					+ textForObserve + "</button>");
+
+			if (an.getResultedAIHTMLFilename().length() > 0) {
+				s += ("&nbsp;&nbsp;<button onclick=\"window.open('" + an.getResultedAIHTMLFilename() + "', '_self');\">"
+						+ aiTextForObserve + "</button>");
+			}
+
+			s += "</td>\n</tr>\n";
 
 			// increment number for ID
 			numID++;

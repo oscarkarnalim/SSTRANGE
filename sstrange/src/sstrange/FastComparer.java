@@ -1,16 +1,22 @@
 package sstrange;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
+import org.apache.commons.io.FileUtils;
+
 import info.debatty.java.lsh.LSHMinHash;
 import info.debatty.java.lsh.LSHSuperBit;
+import sstrange.anomaly.AICodeManipulator;
+import sstrange.anomaly.AnomalyTuple;
 import sstrange.htmlgenerator.CodeReader;
-import sstrange.language.HtmlGenerator;
+import sstrange.htmlgenerator.HtmlGenerator;
+import sstrange.htmlgenerator.UniqueCodeHtmlGenerator;
 import sstrange.language.csharp.CSharpFeedbackGenerator;
 import sstrange.language.dart.DartFeedbackGenerator;
 import sstrange.language.java.JavaFeedbackGenerator;
@@ -28,10 +34,15 @@ import support.stringmatching.GSTMatchTuple;
 public class FastComparer {
 
 	public static ArrayList<ComparisonPairTuple> doSyntacticComparison(String assignmentPath, String progLang,
-			String humanLang, int simThreshold, int minMatchingLength, int maxPairs, String templateDirPath,
-			String similarityMeasurement, File assignmentFile, String assignmentParentDirPath, String assignmentName,
-			boolean isMultipleFiles, boolean isCommonCodeAllowed, ArrayList<File> filesToBeDeleted, int numClusters,
-			int numStages, boolean isSensitive) {
+			String humanLang, int simThreshold, int dissimThreshold, int minMatchingLength, int maxPairs,
+			String templateDirPath, String similarityMeasurement, File assignmentFile, String assignmentParentDirPath,
+			String assignmentName, boolean isMultipleFiles, boolean isCommonCodeAllowed, String aiSubPath,
+			ArrayList<File> filesToBeDeleted, int numClusters, int numStages, boolean isSensitive) {
+
+		// add AI submission as one of the submissions if exist
+		String aiSubName = "";
+		if (aiSubPath.length() > 0 && aiSubPath.equals("none") == false)
+			aiSubName = AICodeManipulator.moveAISubToMainAssignmentFolder(aiSubPath, assignmentPath, filesToBeDeleted);
 
 		// if multiple files, merge them
 		if (isMultipleFiles) {
@@ -58,13 +69,15 @@ public class FastComparer {
 
 		// generate STRANGE reports
 		return compareAndGenerateHTMLReports(assignmentPath, resultPath, progLang, humanLang, simThreshold,
-				minMatchingLength, maxPairs, humanLang, similarityMeasurement, numClusters, numStages, isSensitive);
+				dissimThreshold, minMatchingLength, maxPairs, humanLang, similarityMeasurement, aiSubName, numClusters,
+				numStages, isSensitive);
 
 	}
 
 	private static ArrayList<ComparisonPairTuple> compareAndGenerateHTMLReports(String dirPath, String resultPath,
-			String progLang, String humanLang, int simThreshold, int minMatchLength, int maxPairs, String languageCode,
-			String similarityMeasurement, int numClusters, int numStages, boolean isSensitive) {
+			String progLang, String humanLang, int simThreshold, int dissimThreshold, int minMatchLength, int maxPairs,
+			String languageCode, String similarityMeasurement, String aiSubName, int numClusters, int numStages,
+			boolean isSensitive) {
 		// create the output dir
 		File resultDir = new File(resultPath);
 		resultDir.mkdir();
@@ -135,42 +148,56 @@ public class FastComparer {
 
 			// calculate minhash
 			return _compareAndGenerateHTMLReportsMinHash(assignments, tokenStrings, tokenIndexes, surfaceTokenIndexes,
-					vectorHeader, dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs,
-					languageCode, numClusters, numStages);
+					vectorHeader, dirPath, resultPath, progLang, humanLang, simThreshold, dissimThreshold, aiSubName,
+					minMatchLength, maxPairs, languageCode, numClusters, numStages, isSensitive);
 		} else if (similarityMeasurement.equalsIgnoreCase("Super-Bit")) {
 			// generate vector header
 			ArrayList<String> vectorHeader = IndexGenerator.generateVectorHeader(tokenIndexes);
 
 			// calculate super-bit
 			return _compareAndGenerateHTMLReportsSuoerBit(assignments, tokenStrings, tokenIndexes, surfaceTokenIndexes,
-					vectorHeader, dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs,
-					languageCode, numClusters, numStages);
+					vectorHeader, dirPath, resultPath, progLang, humanLang, simThreshold, dissimThreshold, aiSubName,
+					minMatchLength, maxPairs, languageCode, numClusters, numStages, isSensitive);
 		} else if (similarityMeasurement.equalsIgnoreCase("Jaccard")) {
 			return _compareAndGenerateHTMLReportsJaccard(assignments, tokenStrings, tokenIndexes, surfaceTokenIndexes,
-					dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs, languageCode);
+					dirPath, resultPath, progLang, humanLang, simThreshold, dissimThreshold, aiSubName, minMatchLength,
+					maxPairs, languageCode, isSensitive);
 		} else if (similarityMeasurement.equalsIgnoreCase("Cosine")) {
 			return _compareAndGenerateHTMLReportsCosine(assignments, tokenStrings, tokenIndexes, surfaceTokenIndexes,
-					dirPath, resultPath, progLang, humanLang, simThreshold, minMatchLength, maxPairs, languageCode);
+					dirPath, resultPath, progLang, humanLang, simThreshold, dissimThreshold, aiSubName, minMatchLength,
+					maxPairs, languageCode, isSensitive);
 		} else {
 			// RKRGST
 			return _compareAndGenerateHTMLReportsRKRGST(assignments, tokenStrings, dirPath, resultPath, progLang,
-					humanLang, simThreshold, minMatchLength, maxPairs, languageCode, isSensitive);
+					humanLang, simThreshold, dissimThreshold, aiSubName, minMatchLength, maxPairs, languageCode,
+					isSensitive);
 		}
 
 	}
 
 	private static ArrayList<ComparisonPairTuple> _compareAndGenerateHTMLReportsRKRGST(File[] assignments,
 			ArrayList<ArrayList<FeedbackToken>> tokenStrings, String dirPath, String resultPath, String progLang,
-			String humanLang, int simThreshold, int minMatchLength, int maxPairs, String languageCode,
-			boolean isSensitive) {
+			String humanLang, int simThreshold, int dissimThreshold, String aiSubName, int minMatchLength, int maxPairs,
+			String languageCode, boolean isSensitive) {
 		// RKRGST
+
+		// to calculate dissimilarity and anomaly
+		ArrayList<AnomalyTuple> anomalies = new ArrayList<>();
+		int[] simPerSubmission = new int[tokenStrings.size()];
+		int[] surSimPerSubmission = new int[tokenStrings.size()];
+
 		try {
 			// to store the result
 			ArrayList<ComparisonPairTuple> codePairs = new ArrayList<>();
+			ArrayList<ComparisonPairTuple> aiCodePairs = new ArrayList<>();
 
 			// do the comparison
 			for (int j = 0; j < tokenStrings.size(); j++) {
 				for (int k = j + 1; k < tokenStrings.size(); k++) {
+
+					String dirname1 = assignments[j].getName();
+					String dirname2 = assignments[k].getName();
+
 					// get matched tiles with RKRGST
 					ArrayList<GSTMatchTuple> simTuples = FeedbackMessageGenerator
 							.generateMatchedTuples(tokenStrings.get(j), tokenStrings.get(k), minMatchLength, false);
@@ -179,9 +206,32 @@ public class FastComparer {
 					int simDegree = (int) (MatchGenerator.calcAverageSimilarity(simTuples, tokenStrings.get(j).size(),
 							tokenStrings.get(k).size()) * 100);
 
-					if (simDegree >= simThreshold) {
-						String dirname1 = assignments[j].getName();
-						String dirname2 = assignments[k].getName();
+					// add the sim degrees except for AI sample
+					if (!(dirname1.equals(aiSubName) || dirname2.equals(aiSubName))) {
+						simPerSubmission[j] += simDegree;
+						simPerSubmission[k] += simDegree;
+					}
+
+					// calculate surface sim if needed
+					int surfaceSimDegree = -1;
+					if (isSensitive) {
+						ArrayList<GSTMatchTuple> surfaceSimTuples = FeedbackMessageGenerator
+								.generateMatchedTuples(tokenStrings.get(j), tokenStrings.get(k), minMatchLength, true);
+
+						surfaceSimDegree = (int) (MatchGenerator.calcAverageSimilarity(surfaceSimTuples,
+								tokenStrings.get(j).size(), tokenStrings.get(k).size()) * 100);
+						// add the surface sim degree except for AI sample
+						if (!(dirname1.equals(aiSubName) || dirname2.equals(aiSubName))) {
+							surSimPerSubmission[j] += surfaceSimDegree;
+							surSimPerSubmission[k] += surfaceSimDegree;
+						}
+					}
+
+					int overallSimDegree = simDegree;
+					if (isSensitive)
+						overallSimDegree = (simDegree + surfaceSimDegree) / 2;
+
+					if (overallSimDegree >= simThreshold) {
 
 						File code1 = CodeReader.getCode(assignments[j], progLang);
 						File code2 = CodeReader.getCode(assignments[k], progLang);
@@ -190,24 +240,36 @@ public class FastComparer {
 						if (code1 == null || code2 == null)
 							continue;
 
-						// calculate surface sim if needed
-						int surfaceSimDegree = -1;
-						if (isSensitive) {
-							ArrayList<GSTMatchTuple> surfaceSimTuples = FeedbackMessageGenerator.generateMatchedTuples(
-									tokenStrings.get(j), tokenStrings.get(k), minMatchLength, true);
-							surfaceSimDegree = (int) (MatchGenerator.calcAverageSimilarity(surfaceSimTuples,
-									tokenStrings.get(j).size(), tokenStrings.get(k).size()) * 100);
-						}
+						if (dirname1.equals(aiSubName) || dirname2.equals(aiSubName)) {
+							// if one of them is AI sample, direct the result to anomaly list
+							/*
+							 * if submission j is AI sample, the anomaly submission is k. Otherwise the
+							 * anomaly is j.
+							 */
+							int anomalySubIdx = k;
+							dirname1 = "AI sample";
+							if (dirname2.equals(aiSubName)) {
+								anomalySubIdx = j;
+								dirname2 = "AI sample";
+							}
+							anomalies.add(new AnomalyTuple(anomalySubIdx, assignments[anomalySubIdx].getName(), -1,
+									overallSimDegree));
 
-						// add the comparison pair
-						codePairs.add(new ComparisonPairTuple(j, k, dirname1, dirname2, simDegree, surfaceSimDegree, 1, simTuples));
+							// add the comparison pair for AI
+							aiCodePairs.add(new ComparisonPairTuple(j, k, dirname1, dirname2, simDegree,
+									surfaceSimDegree, 1, simTuples));
+
+						} else {
+							// add the comparison pair if no AI sample submission
+							codePairs.add(new ComparisonPairTuple(j, k, dirname1, dirname2, simDegree, surfaceSimDegree,
+									1, simTuples));
+						}
 					}
 				}
 			}
 
 			// sort in descending order based on average syntax
 			Collections.sort(codePairs);
-
 			// remove extra pairs
 			while (codePairs.size() > maxPairs) {
 				codePairs.remove(codePairs.size() - 1);
@@ -218,6 +280,7 @@ public class FastComparer {
 				ComparisonPairTuple ct = codePairs.get(i);
 				String syntacticFilename = "obs" + i + ".html";
 				String syntacticFilepath = resultPath + File.separator + syntacticFilename;
+				ct.setResultedHTMLFilename(syntacticFilename);
 
 				File code1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], progLang);
 				File code2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], progLang);
@@ -240,9 +303,105 @@ public class FastComparer {
 				}
 			}
 
+			// create a list of anomalies (overly unique submissions)
+			for (int j = 0; j < simPerSubmission.length; j++) {
+				// exclude AI code sample
+				if (assignments[j].getName().equals(aiSubName))
+					continue;
+
+				int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+				if (isSensitive) {
+					overallDissim = 100
+							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+				}
+				if (overallDissim >= dissimThreshold) {
+					/*
+					 * if there are anomaly tuples resulted from comparison with AI, just update the
+					 * syntax dissim
+					 */
+					boolean isFound = false;
+					for (int i = 0; i < anomalies.size(); i++) {
+						AnomalyTuple a = anomalies.get(i);
+						if (a.getSubmissionID() == j) {
+							isFound = true;
+							a.setSyntaxDissim(overallDissim);
+						}
+					}
+
+					if (isFound == false)
+						anomalies.add(new AnomalyTuple(j, assignments[j].getName(), overallDissim, -1));
+				}
+			}
+
+			// sort
+			Collections.sort(anomalies);
+			// remove extra submissions
+			while (anomalies.size() > maxPairs) {
+				anomalies.remove(anomalies.size() - 1);
+			}
+
+			// generate anomaly reports
+			for (int i = 0; i < anomalies.size(); i++) {
+				AnomalyTuple ct = anomalies.get(i);
+
+				String syntacticFilename = "uni" + i + ".html";
+				String syntacticFilepath = resultPath + File.separator + syntacticFilename;
+
+				// set the path to comparison pair tuple
+				ct.setResultedHTMLFilename(syntacticFilename);
+
+				File code1 = CodeReader.getCode(assignments[ct.getSubmissionID()], progLang);
+
+				UniqueCodeHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), ct.getAssignmentName(),
+						MainFrame.dissimTemplatePath, syntacticFilepath, humanLang, ct.getDissimResult());
+
+				if (ct.getAiSim() != -1) {
+					// generate similarity report comparing with AI
+					syntacticFilename = "oai" + i + ".html";
+					syntacticFilepath = resultPath + File.separator + syntacticFilename;
+
+					// search the code pair calculated before
+					ComparisonPairTuple selected = null;
+					for (int j = 0; j < aiCodePairs.size(); j++) {
+						ComparisonPairTuple ct2 = aiCodePairs.get(j);
+						if (ct2.getSubmissionID1() == ct.getSubmissionID()
+								|| ct2.getSubmissionID2() == ct.getSubmissionID()) {
+							selected = ct2;
+						}
+					}
+
+					if (selected != null) {
+						// generate the ai comparison
+						selected.setResultedHTMLFilename(syntacticFilename);
+
+						code1 = CodeReader.getCode(assignments[selected.getSubmissionID1()], progLang);
+						File code2 = CodeReader.getCode(assignments[selected.getSubmissionID2()], progLang);
+
+						// set the path to comparison pair tuple
+						ct.setResultedAIHTMLFilename(syntacticFilename);
+
+						if (progLang.equals("py")) {
+							PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(),
+									code2.getAbsolutePath(), tokenStrings.get(selected.getSubmissionID1()),
+									tokenStrings.get(selected.getSubmissionID2()), selected.getAssignmentName1(),
+									selected.getAssignmentName2(), MainFrame.pairTemplatePath, syntacticFilepath,
+									minMatchLength, selected.getSameClusterOccurrences(), humanLang,
+									selected.getMatches());
+						} else {
+							HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+									tokenStrings.get(selected.getSubmissionID1()),
+									tokenStrings.get(selected.getSubmissionID2()), selected.getAssignmentName1(),
+									selected.getAssignmentName2(), MainFrame.pairTemplatePath, syntacticFilepath,
+									minMatchLength, selected.getSameClusterOccurrences(), humanLang,
+									selected.getMatches());
+						}
+					}
+				}
+			}
+
 			// generate the index HTML
-			IndexHTMLGenerator.generateHtml(dirPath, codePairs, MainFrame.indexTemplatePath, resultPath, simThreshold,
-					humanLang);
+			IndexHTMLGenerator.generateHtml(dirPath, codePairs, anomalies, MainFrame.indexTemplatePath, resultPath,
+					simThreshold, dissimThreshold, humanLang);
 			// generate additional files
 			STRANGEPairGenerator.generateAdditionalDir(resultPath);
 
@@ -258,23 +417,56 @@ public class FastComparer {
 			ArrayList<ArrayList<FeedbackToken>> tokenStrings,
 			ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes,
 			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceTokenIndexes, String dirPath, String resultPath,
-			String progLang, String humanLang, int simThreshold, int minMatchLength, int maxPairs,
-			String languageCode) {
+			String progLang, String humanLang, int simThreshold, int dissimThreshold, String aiSubName,
+			int minMatchLength, int maxPairs, String languageCode, boolean isSensitive) {
 		// Jaccard
+
+		// to calculate dissimilarity and anomaly
+		ArrayList<AnomalyTuple> anomalies = new ArrayList<>();
+		int[] simPerSubmission = new int[tokenStrings.size()];
+		int[] surSimPerSubmission = new int[tokenStrings.size()];
+
 		try {
 			// to store the result
 			ArrayList<ComparisonPairTuple> codePairs = new ArrayList<>();
+			ArrayList<ComparisonPairTuple> aiCodePairs = new ArrayList<>();
 
 			// do the comparison
 			for (int j = 0; j < tokenIndexes.size(); j++) {
-				for (int k = j + 1; k < tokenIndexes.size(); k++) {
+				for (int k = j + 1; k < tokenStrings.size(); k++) {
+					// get matched tiles with RKRGST
+
+					String dirname1 = assignments[j].getName();
+					String dirname2 = assignments[k].getName();
+
 					// get the sim degree for jaccard
 					int simDegree = (int) (JaccardCalculator.calculateJaccardSimilarity(tokenIndexes.get(j),
 							tokenIndexes.get(k)) * 100);
 
-					if (simDegree >= simThreshold) {
-						String dirname1 = assignments[j].getName();
-						String dirname2 = assignments[k].getName();
+					// add the sim degrees except for AI sample
+					if (!(dirname1.equals(aiSubName) || dirname2.equals(aiSubName))) {
+						simPerSubmission[j] += simDegree;
+						simPerSubmission[k] += simDegree;
+					}
+
+					// calculate surface sim
+					double surfaceSimDegree = -1;
+					if (surfaceTokenIndexes.size() > 0) {
+						surfaceSimDegree = (int) (JaccardCalculator.calculateJaccardSimilarity(
+								surfaceTokenIndexes.get(j), surfaceTokenIndexes.get(k)) * 100);
+
+						// add the sim degrees except for AI sample
+						if (!(dirname1.equals(aiSubName) || dirname2.equals(aiSubName))) {
+							surSimPerSubmission[j] += surfaceSimDegree;
+							surSimPerSubmission[k] += surfaceSimDegree;
+						}
+					}
+
+					int overallSimDegree = simDegree;
+					if (isSensitive)
+						overallSimDegree = (int) ((simDegree + surfaceSimDegree) / 2);
+
+					if (overallSimDegree >= simThreshold) {
 
 						File code1 = CodeReader.getCode(assignments[j], progLang);
 						File code2 = CodeReader.getCode(assignments[k], progLang);
@@ -287,22 +479,27 @@ public class FastComparer {
 						ArrayList<GSTMatchTuple> matches = MatchGenerator.generateMatches(tokenIndexes.get(j),
 								tokenIndexes.get(k), minMatchLength);
 
-						// if the surface index is not empty, then calculate surface sim
-						double surfaceSimDegree = -1;
-						if (surfaceTokenIndexes.size() > 0) {
-							HashMap<String, ArrayList<Integer>> surfaceTokenIndex1 = surfaceTokenIndexes.get(j);
-							HashMap<String, ArrayList<Integer>> surfaceTokenIndex2 = surfaceTokenIndexes.get(k);
+						if (dirname1.equals(aiSubName) || dirname2.equals(aiSubName)) {
+							// if one of them is AI sample, direct the result to anomaly list
+							/*
+							 * if submission j is AI sample, the anomaly submission is k. Otherwise the
+							 * anomaly is j.
+							 */
+							int anomalySubIdx = k;
+							if (dirname2.equals(aiSubName))
+								anomalySubIdx = j;
+							anomalies.add(new AnomalyTuple(anomalySubIdx, assignments[anomalySubIdx].getName(), -1,
+									overallSimDegree));
 
-							ArrayList<GSTMatchTuple> surfaceMatches = MatchGenerator.generateMatches(surfaceTokenIndex1,
-									surfaceTokenIndex2, minMatchLength);
+							// add the comparison pair for AI
+							aiCodePairs.add(new ComparisonPairTuple(j, k, dirname1, dirname2, simDegree,
+									surfaceSimDegree, 1, matches));
 
-							surfaceSimDegree = (int) (MatchGenerator.calcAverageSimilarity(surfaceMatches,
-									tokenStrings.get(j).size(), tokenStrings.get(k).size()) * 100);
+						} else {
+							// add the comparison pair
+							codePairs.add(new ComparisonPairTuple(j, k, dirname1, dirname2, simDegree, surfaceSimDegree,
+									1, matches));
 						}
-
-						// add the comparison pair
-						codePairs.add(new ComparisonPairTuple(j, k, dirname1, dirname2, simDegree, surfaceSimDegree, 1,
-								matches));
 					}
 				}
 			}
@@ -313,6 +510,98 @@ public class FastComparer {
 			// remove extra pairs
 			while (codePairs.size() > maxPairs) {
 				codePairs.remove(codePairs.size() - 1);
+			}
+
+			for (int j = 0; j < simPerSubmission.length; j++) {
+				// exclude AI code sample
+				if (assignments[j].getName().equals(aiSubName))
+					continue;
+
+				int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+				if (isSensitive)
+					overallDissim = 100
+							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+				if (overallDissim >= dissimThreshold) {
+					/*
+					 * if there are anomaly tuples resulted from comparison with AI, just update the
+					 * syntax dissim
+					 */
+					boolean isFound = false;
+					for (int i = 0; i < anomalies.size(); i++) {
+						AnomalyTuple a = anomalies.get(i);
+						if (a.getSubmissionID() == j) {
+							isFound = true;
+							a.setSyntaxDissim(overallDissim);
+						}
+					}
+
+					if (isFound == false)
+						anomalies.add(new AnomalyTuple(j, assignments[j].getName(), overallDissim, -1));
+				}
+			}
+
+			// sort
+			Collections.sort(anomalies);
+			// remove extra submissions
+			while (anomalies.size() > maxPairs) {
+				anomalies.remove(anomalies.size() - 1);
+			}
+
+			// generate anomaly reports
+			for (int i = 0; i < anomalies.size(); i++) {
+				AnomalyTuple ct = anomalies.get(i);
+				String syntacticFilename = "uni" + i + ".html";
+				String syntacticFilepath = resultPath + File.separator + syntacticFilename;
+				ct.setResultedHTMLFilename(syntacticFilename);
+
+				File code1 = CodeReader.getCode(assignments[ct.getSubmissionID()], progLang);
+
+				UniqueCodeHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), ct.getAssignmentName(),
+						MainFrame.dissimTemplatePath, syntacticFilepath, humanLang, ct.getDissimResult());
+
+				if (ct.getAiSim() != -1) {
+					// generate similarity report comparing with AI
+					syntacticFilename = "oai" + i + ".html";
+					syntacticFilepath = resultPath + File.separator + syntacticFilename;
+
+					// search the code pair calculated before
+					ComparisonPairTuple selected = null;
+					for (int j = 0; j < aiCodePairs.size(); j++) {
+						ComparisonPairTuple ct2 = aiCodePairs.get(j);
+						if (ct2.getSubmissionID1() == ct.getSubmissionID()
+								|| ct2.getSubmissionID2() == ct.getSubmissionID()) {
+							selected = ct2;
+						}
+					}
+
+					if (selected != null) {
+						// generate the ai comparison
+						selected.setResultedHTMLFilename(syntacticFilename);
+
+						code1 = CodeReader.getCode(assignments[selected.getSubmissionID1()], progLang);
+						File code2 = CodeReader.getCode(assignments[selected.getSubmissionID2()], progLang);
+
+						// set the path to comparison pair tuple
+						ct.setResultedAIHTMLFilename(syntacticFilename);
+
+						if (progLang.equals("py")) {
+							PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(),
+									code2.getAbsolutePath(), tokenStrings.get(selected.getSubmissionID1()),
+									tokenStrings.get(selected.getSubmissionID2()), selected.getAssignmentName1(),
+									selected.getAssignmentName2(), MainFrame.pairTemplatePath, syntacticFilepath,
+									minMatchLength, selected.getSameClusterOccurrences(), humanLang,
+									selected.getMatches());
+						} else {
+							HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+									tokenStrings.get(selected.getSubmissionID1()),
+									tokenStrings.get(selected.getSubmissionID2()), selected.getAssignmentName1(),
+									selected.getAssignmentName2(), MainFrame.pairTemplatePath, syntacticFilepath,
+									minMatchLength, selected.getSameClusterOccurrences(), humanLang,
+									selected.getMatches());
+						}
+					}
+				}
+
 			}
 
 			// generate similarity reports
@@ -343,8 +632,8 @@ public class FastComparer {
 			}
 
 			// generate the index HTML
-			IndexHTMLGenerator.generateHtml(dirPath, codePairs, MainFrame.indexTemplatePath, resultPath, simThreshold,
-					humanLang);
+			IndexHTMLGenerator.generateHtml(dirPath, codePairs, anomalies, MainFrame.indexTemplatePath, resultPath,
+					simThreshold, dissimThreshold, humanLang);
 			// generate additional files
 			STRANGEPairGenerator.generateAdditionalDir(resultPath);
 
@@ -359,24 +648,56 @@ public class FastComparer {
 			ArrayList<ArrayList<FeedbackToken>> tokenStrings,
 			ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes,
 			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceTokenIndexes, String dirPath, String resultPath,
-			String progLang, String humanLang, int simThreshold, int minMatchLength, int maxPairs,
-			String languageCode) {
-		// Jaccard
+			String progLang, String humanLang, int simThreshold, int dissimThreshold, String aiSubName,
+			int minMatchLength, int maxPairs, String languageCode, boolean isSensitive) {
+		// Cosine
+
+		// to calculate dissimilarity and anomaly
+		ArrayList<AnomalyTuple> anomalies = new ArrayList<>();
+		int[] simPerSubmission = new int[tokenStrings.size()];
+		int[] surSimPerSubmission = new int[tokenStrings.size()];
+
 		try {
 			// to store the result
 			ArrayList<ComparisonPairTuple> codePairs = new ArrayList<>();
+			ArrayList<ComparisonPairTuple> aiCodePairs = new ArrayList<>();
 
 			// do the comparison
 			for (int j = 0; j < tokenIndexes.size(); j++) {
-				for (int k = j + 1; k < tokenIndexes.size(); k++) {
-					// get the sim degree for jaccard
+
+				for (int k = j + 1; k < tokenStrings.size(); k++) {
+					// get matched tiles with Cosine
+					String dirname1 = assignments[j].getName();
+					String dirname2 = assignments[k].getName();
+
+					// get the sim degree for Cosine
 					int simDegree = (int) (CosineCalculator.calculateCosineSimilarity(tokenIndexes.get(j),
 							tokenIndexes.get(k)) * 100);
 
-					if (simDegree >= simThreshold) {
-						String dirname1 = assignments[j].getName();
-						String dirname2 = assignments[k].getName();
+					// add the sim degrees except for AI sample
+					if (!(dirname1.equals(aiSubName) || dirname2.equals(aiSubName))) {
+						simPerSubmission[j] += simDegree;
+						simPerSubmission[k] += simDegree;
+					}
 
+					// if the surface index is not empty, then calculate surface sim
+					double surfaceSimDegree = -1;
+					if (surfaceTokenIndexes.size() > 0) {
+						surfaceSimDegree = (int) (CosineCalculator.calculateCosineSimilarity(surfaceTokenIndexes.get(j),
+								surfaceTokenIndexes.get(k)) * 100);
+
+						// add the sim degrees except for AI sample
+						if (!(dirname1.equals(aiSubName) || dirname2.equals(aiSubName))) {
+							surSimPerSubmission[j] += surfaceSimDegree;
+							surSimPerSubmission[k] += surfaceSimDegree;
+						}
+					}
+
+					int overallSimDegree = simDegree;
+					if (isSensitive)
+						overallSimDegree = (int) ((simDegree + surfaceSimDegree) / 2);
+
+					if (overallSimDegree >= simThreshold) {
 						File code1 = CodeReader.getCode(assignments[j], progLang);
 						File code2 = CodeReader.getCode(assignments[k], progLang);
 
@@ -387,23 +708,26 @@ public class FastComparer {
 						// generate the matches
 						ArrayList<GSTMatchTuple> matches = MatchGenerator.generateMatches(tokenIndexes.get(j),
 								tokenIndexes.get(k), minMatchLength);
-
-						// if the surface index is not empty, then calculate surface sim
-						double surfaceSimDegree = -1;
-						if (surfaceTokenIndexes.size() > 0) {
-							HashMap<String, ArrayList<Integer>> surfaceTokenIndex1 = surfaceTokenIndexes.get(j);
-							HashMap<String, ArrayList<Integer>> surfaceTokenIndex2 = surfaceTokenIndexes.get(k);
-
-							ArrayList<GSTMatchTuple> surfaceMatches = MatchGenerator.generateMatches(surfaceTokenIndex1,
-									surfaceTokenIndex2, minMatchLength);
-
-							surfaceSimDegree = (int) (MatchGenerator.calcAverageSimilarity(surfaceMatches,
-									tokenStrings.get(j).size(), tokenStrings.get(k).size()) * 100);
+						if (dirname1.equals(aiSubName) || dirname2.equals(aiSubName)) {
+							// if one of them is AI sample, direct the result to anomaly list
+							/*
+							 * if submission j is AI sample, the anomaly submission is k. Otherwise the
+							 * anomaly is j.
+							 */
+							int anomalySubIdx = k;
+							if (dirname2.equals(aiSubName))
+								anomalySubIdx = j;
+							anomalies.add(new AnomalyTuple(anomalySubIdx, assignments[anomalySubIdx].getName(), -1,
+									overallSimDegree));
+							// add the comparison pair for AI
+							aiCodePairs.add(new ComparisonPairTuple(j, k, dirname1, dirname2, simDegree,
+									surfaceSimDegree, 1, matches));
+						} else {
+							// add the comparison pair
+							codePairs.add(new ComparisonPairTuple(j, k, dirname1, dirname2, simDegree, surfaceSimDegree,
+									1, matches));
 						}
 
-						// add the comparison pair
-						codePairs.add(new ComparisonPairTuple(j, k, dirname1, dirname2, simDegree, surfaceSimDegree, 1,
-								matches));
 					}
 				}
 			}
@@ -414,6 +738,97 @@ public class FastComparer {
 			// remove extra pairs
 			while (codePairs.size() > maxPairs) {
 				codePairs.remove(codePairs.size() - 1);
+			}
+
+			for (int j = 0; j < simPerSubmission.length; j++) {
+				// exclude AI code sample
+				if (assignments[j].getName().equals(aiSubName))
+					continue;
+
+				int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+				if (isSensitive)
+					overallDissim = 100
+							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+				if (overallDissim >= dissimThreshold) {
+					/*
+					 * if there are anomaly tuples resulted from comparison with AI, just update the
+					 * syntax dissim
+					 */
+					boolean isFound = false;
+					for (int i = 0; i < anomalies.size(); i++) {
+						AnomalyTuple a = anomalies.get(i);
+						if (a.getSubmissionID() == j) {
+							isFound = true;
+							a.setSyntaxDissim(overallDissim);
+						}
+					}
+
+					if (isFound == false)
+						anomalies.add(new AnomalyTuple(j, assignments[j].getName(), overallDissim, -1));
+				}
+			}
+
+			// sort
+			Collections.sort(anomalies);
+			// remove extra submissions
+			while (anomalies.size() > maxPairs) {
+				anomalies.remove(anomalies.size() - 1);
+			}
+
+			// generate anomaly reports
+			for (int i = 0; i < anomalies.size(); i++) {
+				AnomalyTuple ct = anomalies.get(i);
+				String syntacticFilename = "uni" + i + ".html";
+				String syntacticFilepath = resultPath + File.separator + syntacticFilename;
+				ct.setResultedHTMLFilename(syntacticFilename);
+
+				File code1 = CodeReader.getCode(assignments[ct.getSubmissionID()], progLang);
+
+				UniqueCodeHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), ct.getAssignmentName(),
+						MainFrame.dissimTemplatePath, syntacticFilepath, humanLang, ct.getDissimResult());
+
+				if (ct.getAiSim() != -1) {
+					// generate similarity report comparing with AI
+					syntacticFilename = "oai" + i + ".html";
+					syntacticFilepath = resultPath + File.separator + syntacticFilename;
+
+					// search the code pair calculated before
+					ComparisonPairTuple selected = null;
+					for (int j = 0; j < aiCodePairs.size(); j++) {
+						ComparisonPairTuple ct2 = aiCodePairs.get(j);
+						if (ct2.getSubmissionID1() == ct.getSubmissionID()
+								|| ct2.getSubmissionID2() == ct.getSubmissionID()) {
+							selected = ct2;
+						}
+					}
+
+					if (selected != null) {
+						// generate the ai comparison
+						selected.setResultedHTMLFilename(syntacticFilename);
+
+						code1 = CodeReader.getCode(assignments[selected.getSubmissionID1()], progLang);
+						File code2 = CodeReader.getCode(assignments[selected.getSubmissionID2()], progLang);
+
+						// set the path to comparison pair tuple
+						ct.setResultedAIHTMLFilename(syntacticFilename);
+
+						if (progLang.equals("py")) {
+							PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(),
+									code2.getAbsolutePath(), tokenStrings.get(selected.getSubmissionID1()),
+									tokenStrings.get(selected.getSubmissionID2()), selected.getAssignmentName1(),
+									selected.getAssignmentName2(), MainFrame.pairTemplatePath, syntacticFilepath,
+									minMatchLength, selected.getSameClusterOccurrences(), humanLang,
+									selected.getMatches());
+						} else {
+							HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+									tokenStrings.get(selected.getSubmissionID1()),
+									tokenStrings.get(selected.getSubmissionID2()), selected.getAssignmentName1(),
+									selected.getAssignmentName2(), MainFrame.pairTemplatePath, syntacticFilepath,
+									minMatchLength, selected.getSameClusterOccurrences(), humanLang,
+									selected.getMatches());
+						}
+					}
+				}
 			}
 
 			// generate similarity reports
@@ -444,8 +859,8 @@ public class FastComparer {
 			}
 
 			// generate the index HTML
-			IndexHTMLGenerator.generateHtml(dirPath, codePairs, MainFrame.indexTemplatePath, resultPath, simThreshold,
-					humanLang);
+			IndexHTMLGenerator.generateHtml(dirPath, codePairs, anomalies, MainFrame.indexTemplatePath, resultPath,
+					simThreshold, dissimThreshold, humanLang);
 			// generate additional files
 			STRANGEPairGenerator.generateAdditionalDir(resultPath);
 
@@ -460,13 +875,20 @@ public class FastComparer {
 			ArrayList<ArrayList<FeedbackToken>> tokenStrings,
 			ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes,
 			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceTokenIndexes, ArrayList<String> vectorHeader,
-			String dirPath, String resultPath, String progLang, String humanLang, int simThreshold, int minMatchLength,
-			int maxPairs, String languageCode, int numClusters, int numStages) {
+			String dirPath, String resultPath, String progLang, String humanLang, int simThreshold, int dissimThreshold,
+			String aiSubName, int minMatchLength, int maxPairs, String languageCode, int numClusters, int numStages,
+			boolean isSensitive) {
 		// MinHash algorithm
+
+		// to calculate dissimilarity and anomaly
+		ArrayList<AnomalyTuple> anomalies = new ArrayList<>();
+		int[] simPerSubmission = new int[tokenStrings.size()];
+		int[] surSimPerSubmission = new int[tokenStrings.size()];
 
 		try {
 			// to store the result
 			ArrayList<ComparisonPairTuple> codePairs = new ArrayList<>();
+			ArrayList<ComparisonPairTuple> aiCodePairs = new ArrayList<>();
 
 			// generate Jaccard vectors
 			ArrayList<boolean[]> tokenVectors = new ArrayList<boolean[]>();
@@ -477,76 +899,76 @@ public class FastComparer {
 
 			// create MinHash object with best default setting
 			int lshn = vectorHeader.size();
-			LSHMinHash lsh = new LSHMinHash(numStages, numClusters, lshn);
+			if (lshn > 0) {
+				LSHMinHash lsh = new LSHMinHash(numStages, numClusters, lshn);
 
-			// store all the hashes (all stages)
-			int[][] lshHashes = new int[tokenVectors.size()][];
-			for (int i = 0; i < tokenVectors.size(); i++) {
-				lshHashes[i] = lsh.hash(tokenVectors.get(i));
-			}
+				// store all the hashes (all stages)
+				int[][] lshHashes = new int[tokenVectors.size()][];
+				for (int i = 0; i < tokenVectors.size(); i++) {
+					lshHashes[i] = lsh.hash(tokenVectors.get(i));
+				}
 
-			// to store the pairs and their occurrences
-			HashMap<String, Integer> similarPairs = new HashMap<String, Integer>();
+				// to store the pairs and their occurrences
+				HashMap<String, Integer> similarPairs = new HashMap<String, Integer>();
 
-			// for each vector, check each stage and mark all programs fall to the same
-			// bucket at least once
-			for (int i = 0; i < tokenVectors.size(); i++) {
-				// for each stage, mark all programs fall to the same bucket
-				for (int j = 0; j < lshHashes[i].length; j++) {
-					// search the counterpart of i
-					for (int k = i + 1; k < tokenVectors.size(); k++) {
-						if (lshHashes[i][j] == lshHashes[k][j]) {
-							// if the hash is similar, put that on similar pairs
+				// for each vector, check each stage and mark all programs fall to the same
+				// bucket at least once
+				for (int i = 0; i < tokenVectors.size(); i++) {
 
-							// set the key
-							String key = k + " " + i;
-							if (i < k)
-								key = i + " " + k;
+					// for each stage, mark all programs fall to the same bucket
+					for (int j = 0; j < lshHashes[i].length; j++) {
+						// search the counterpart of i
+						for (int k = i + 1; k < tokenVectors.size(); k++) {
+							if (lshHashes[i][j] == lshHashes[k][j]) {
+								// if the hash is similar, put that on similar pairs
 
-							// get current value if any
-							Integer val = similarPairs.get(key);
-							if (val == null)
-								val = 0;
+								// set the key
+								String key = k + " " + i;
+								if (i < k)
+									key = i + " " + k;
 
-							// update the new value
-							similarPairs.put(key, val + 1);
+								// get current value if any
+								Integer val = similarPairs.get(key);
+								if (val == null)
+									val = 0;
+
+								// update the new value
+								similarPairs.put(key, val + 1);
+							}
 						}
 					}
 				}
-			}
 
-			// for each similar pair, do the comparison
-			Iterator<Entry<String, Integer>> itSimilarPairs = similarPairs.entrySet().iterator();
-			while (itSimilarPairs.hasNext()) {
-				Entry<String, Integer> en = itSimilarPairs.next();
+				// for each similar pair, do the comparison
+				Iterator<Entry<String, Integer>> itSimilarPairs = similarPairs.entrySet().iterator();
+				while (itSimilarPairs.hasNext()) {
+					Entry<String, Integer> en = itSimilarPairs.next();
 
-				String[] cur = en.getKey().split(" ");
+					String[] cur = en.getKey().split(" ");
 
-				// get the pair
-				int submissionID1 = Integer.parseInt(cur[0]);
-				int submissionID2 = Integer.parseInt(cur[1]);
+					// get the pair
+					int submissionID1 = Integer.parseInt(cur[0]);
+					int submissionID2 = Integer.parseInt(cur[1]);
 
-				HashMap<String, ArrayList<Integer>> tokenIndex1 = tokenIndexes.get(submissionID1);
-				HashMap<String, ArrayList<Integer>> tokenIndex2 = tokenIndexes.get(submissionID2);
-
-				// generate the matches
-				ArrayList<GSTMatchTuple> matches = MatchGenerator.generateMatches(tokenIndex1, tokenIndex2,
-						minMatchLength);
-
-				// get the sim degree
-				int simDegree = (int) (MatchGenerator.calcAverageSimilarity(matches,
-						tokenStrings.get(submissionID1).size(), tokenStrings.get(submissionID2).size()) * 100);
-
-				if (simDegree >= simThreshold) {
 					String dirname1 = assignments[submissionID1].getName();
 					String dirname2 = assignments[submissionID2].getName();
 
-					File code1 = CodeReader.getCode(assignments[submissionID1], progLang);
-					File code2 = CodeReader.getCode(assignments[submissionID2], progLang);
+					HashMap<String, ArrayList<Integer>> tokenIndex1 = tokenIndexes.get(submissionID1);
+					HashMap<String, ArrayList<Integer>> tokenIndex2 = tokenIndexes.get(submissionID2);
 
-					// to deal with non-code directories and files
-					if (code1 == null || code2 == null)
-						continue;
+					// generate the matches
+					ArrayList<GSTMatchTuple> matches = MatchGenerator.generateMatches(tokenIndex1, tokenIndex2,
+							minMatchLength);
+
+					// get the sim degree
+					int simDegree = (int) (MatchGenerator.calcAverageSimilarity(matches,
+							tokenStrings.get(submissionID1).size(), tokenStrings.get(submissionID2).size()) * 100);
+
+					// add the sim degrees except for AI sample
+					if (!(dirname1.equals(aiSubName) || dirname2.equals(aiSubName))) {
+						simPerSubmission[submissionID1] += simDegree;
+						simPerSubmission[submissionID2] += simDegree;
+					}
 
 					// if the surface index is not empty, then calculate surface sim
 					double surfaceSimDegree = -1;
@@ -559,53 +981,181 @@ public class FastComparer {
 
 						surfaceSimDegree = (int) (MatchGenerator.calcAverageSimilarity(surfaceMatches,
 								tokenStrings.get(submissionID1).size(), tokenStrings.get(submissionID2).size()) * 100);
+
+						// add the sim degrees except for AI sample
+						if (!(dirname1.equals(aiSubName) || dirname2.equals(aiSubName))) {
+							surSimPerSubmission[submissionID1] += surfaceSimDegree;
+							surSimPerSubmission[submissionID2] += surfaceSimDegree;
+						}
 					}
 
-					// add the comparison pair
-					ComparisonPairTuple ct = new ComparisonPairTuple(submissionID1, submissionID2, dirname1, dirname2,
-							simDegree, surfaceSimDegree, en.getValue(), matches);
-					codePairs.add(ct);
+					int overallSimDegree = simDegree;
+					if (isSensitive)
+						overallSimDegree = (int) ((simDegree + surfaceSimDegree) / 2);
+
+					if (overallSimDegree >= simThreshold) {
+
+						File code1 = CodeReader.getCode(assignments[submissionID1], progLang);
+						File code2 = CodeReader.getCode(assignments[submissionID2], progLang);
+
+						// to deal with non-code directories and files
+						if (code1 == null || code2 == null)
+							continue;
+
+						if (dirname1.equals(aiSubName) || dirname2.equals(aiSubName)) {
+							// if one of them is AI sample, direct the result to anomaly list
+							/*
+							 * if submission j is AI sample, the anomaly submission is k. Otherwise the
+							 * anomaly is j.
+							 */
+							int anomalySubIdx = submissionID2;
+							if (dirname2.equals(aiSubName))
+								anomalySubIdx = submissionID1;
+							anomalies.add(new AnomalyTuple(anomalySubIdx, assignments[anomalySubIdx].getName(), -1,
+									overallSimDegree));
+
+							// add the comparison pair for AI
+							aiCodePairs.add(new ComparisonPairTuple(submissionID1, submissionID2, dirname1, dirname2,
+									simDegree, surfaceSimDegree, 1, matches));
+
+						} else {
+							// add the comparison pair
+							ComparisonPairTuple ct = new ComparisonPairTuple(submissionID1, submissionID2, dirname1,
+									dirname2, simDegree, surfaceSimDegree, en.getValue(), matches);
+							codePairs.add(ct);
+						}
+					}
 				}
-			}
 
-			// sort in descending order based on average syntax
-			Collections.sort(codePairs);
+				// sort in descending order based on average syntax
+				Collections.sort(codePairs);
 
-			// remove extra pairs
-			while (codePairs.size() > maxPairs) {
-				codePairs.remove(codePairs.size() - 1);
-			}
+				// remove extra pairs
+				while (codePairs.size() > maxPairs) {
+					codePairs.remove(codePairs.size() - 1);
+				}
 
-			// generate similarity reports
-			for (int i = 0; i < codePairs.size(); i++) {
-				ComparisonPairTuple ct = codePairs.get(i);
-				String syntacticFilename = "obs" + i + ".html";
-				String syntacticFilepath = resultPath + File.separator + syntacticFilename;
+				for (int j = 0; j < simPerSubmission.length; j++) {
+					// exclude AI code sample
+					if (assignments[j].getName().equals(aiSubName))
+						continue;
 
-				File code1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], progLang);
-				File code2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], progLang);
+					int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+					if (isSensitive)
+						overallDissim = 100
+								- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+					if (overallDissim >= dissimThreshold) {
+						/*
+						 * if there are anomaly tuples resulted from comparison with AI, just update the
+						 * syntax dissim
+						 */
+						boolean isFound = false;
+						for (int i = 0; i < anomalies.size(); i++) {
+							AnomalyTuple a = anomalies.get(i);
+							if (a.getSubmissionID() == j) {
+								isFound = true;
+								a.setSyntaxDissim(overallDissim);
+							}
+						}
 
-				// set the path to comparison pair tuple
-				ct.setResultedHTMLFilename(syntacticFilename);
+						if (isFound == false)
+							anomalies.add(new AnomalyTuple(j, assignments[j].getName(), overallDissim, -1));
+					}
+				}
 
-				if (progLang.equals("py")) {
-					PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							ct.getMatches());
-				} else {
-					HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							ct.getMatches());
+				// sort
+				Collections.sort(anomalies);
+				// remove extra submissions
+				while (anomalies.size() > maxPairs) {
+					anomalies.remove(anomalies.size() - 1);
+				}
+
+				// generate anomaly reports
+				for (int i = 0; i < anomalies.size(); i++) {
+					AnomalyTuple ct = anomalies.get(i);
+					String syntacticFilename = "uni" + i + ".html";
+					String syntacticFilepath = resultPath + File.separator + syntacticFilename;
+					ct.setResultedHTMLFilename(syntacticFilename);
+
+					File code1 = CodeReader.getCode(assignments[ct.getSubmissionID()], progLang);
+
+					UniqueCodeHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), ct.getAssignmentName(),
+							MainFrame.dissimTemplatePath, syntacticFilepath, humanLang, ct.getDissimResult());
+					if (ct.getAiSim() != -1) {
+						// generate similarity report comparing with AI
+						syntacticFilename = "oai" + i + ".html";
+						syntacticFilepath = resultPath + File.separator + syntacticFilename;
+
+						// search the code pair calculated before
+						ComparisonPairTuple selected = null;
+						for (int j = 0; j < aiCodePairs.size(); j++) {
+							ComparisonPairTuple ct2 = aiCodePairs.get(j);
+							if (ct2.getSubmissionID1() == ct.getSubmissionID()
+									|| ct2.getSubmissionID2() == ct.getSubmissionID()) {
+								selected = ct2;
+							}
+						}
+
+						if (selected != null) {
+							// generate the ai comparison
+							selected.setResultedHTMLFilename(syntacticFilename);
+
+							code1 = CodeReader.getCode(assignments[selected.getSubmissionID1()], progLang);
+							File code2 = CodeReader.getCode(assignments[selected.getSubmissionID2()], progLang);
+
+							// set the path to comparison pair tuple
+							ct.setResultedAIHTMLFilename(syntacticFilename);
+
+							if (progLang.equals("py")) {
+								PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(),
+										code2.getAbsolutePath(), tokenStrings.get(selected.getSubmissionID1()),
+										tokenStrings.get(selected.getSubmissionID2()), selected.getAssignmentName1(),
+										selected.getAssignmentName2(), MainFrame.pairTemplatePath, syntacticFilepath,
+										minMatchLength, selected.getSameClusterOccurrences(), humanLang,
+										selected.getMatches());
+							} else {
+								HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+										tokenStrings.get(selected.getSubmissionID1()),
+										tokenStrings.get(selected.getSubmissionID2()), selected.getAssignmentName1(),
+										selected.getAssignmentName2(), MainFrame.pairTemplatePath, syntacticFilepath,
+										minMatchLength, selected.getSameClusterOccurrences(), humanLang,
+										selected.getMatches());
+							}
+						}
+					}
+				}
+
+				// generate similarity reports
+				for (int i = 0; i < codePairs.size(); i++) {
+					ComparisonPairTuple ct = codePairs.get(i);
+					String syntacticFilename = "obs" + i + ".html";
+					String syntacticFilepath = resultPath + File.separator + syntacticFilename;
+
+					File code1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], progLang);
+					File code2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], progLang);
+
+					// set the path to comparison pair tuple
+					ct.setResultedHTMLFilename(syntacticFilename);
+
+					if (progLang.equals("py")) {
+						PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+								tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+								ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
+								syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
+								ct.getMatches());
+					} else {
+						HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+								tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+								ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
+								syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
+								ct.getMatches());
+					}
 				}
 			}
 
 			// generate the index HTML
-			IndexHTMLGenerator.generateHtml(dirPath, codePairs, MainFrame.indexTemplatePath, resultPath, simThreshold,
-					humanLang);
+			IndexHTMLGenerator.generateHtml(dirPath, codePairs, anomalies, MainFrame.indexTemplatePath, resultPath,
+					simThreshold, dissimThreshold, humanLang);
 			// generate additional files
 			STRANGEPairGenerator.generateAdditionalDir(resultPath);
 
@@ -620,12 +1170,20 @@ public class FastComparer {
 			ArrayList<ArrayList<FeedbackToken>> tokenStrings,
 			ArrayList<HashMap<String, ArrayList<Integer>>> tokenIndexes,
 			ArrayList<HashMap<String, ArrayList<Integer>>> surfaceTokenIndexes, ArrayList<String> vectorHeader,
-			String dirPath, String resultPath, String progLang, String humanLang, int simThreshold, int minMatchLength,
-			int maxPairs, String languageCode, int numClusters, int numStages) {
+			String dirPath, String resultPath, String progLang, String humanLang, int simThreshold, int dissimThreshold,
+			String aiSubName, int minMatchLength, int maxPairs, String languageCode, int numClusters, int numStages,
+			boolean isSensitive) {
 		// Super-Bit algorithm
+
+		// to calculate dissimilarity and anomaly
+		ArrayList<AnomalyTuple> anomalies = new ArrayList<>();
+		int[] simPerSubmission = new int[tokenStrings.size()];
+		int[] surSimPerSubmission = new int[tokenStrings.size()];
+
 		try {
 			// to store the result
 			ArrayList<ComparisonPairTuple> codePairs = new ArrayList<>();
+			ArrayList<ComparisonPairTuple> aiCodePairs = new ArrayList<>();
 
 			// generate Cosine vectors
 			ArrayList<double[]> tokenVectors = new ArrayList<double[]>();
@@ -636,76 +1194,76 @@ public class FastComparer {
 
 			// create SuperBit object with best default setting
 			int lshn = vectorHeader.size();
-			LSHSuperBit lsh = new LSHSuperBit(numStages, numClusters, lshn);
+			if (lshn > 0) {
+				LSHSuperBit lsh = new LSHSuperBit(numStages, numClusters, lshn);
 
-			// store all the hashes (all stages)
-			int[][] lshHashes = new int[tokenVectors.size()][];
-			for (int i = 0; i < tokenVectors.size(); i++) {
-				lshHashes[i] = lsh.hash(tokenVectors.get(i));
-			}
+				// store all the hashes (all stages)
+				int[][] lshHashes = new int[tokenVectors.size()][];
+				for (int i = 0; i < tokenVectors.size(); i++) {
+					lshHashes[i] = lsh.hash(tokenVectors.get(i));
+				}
 
-			// to store the pairs and their occurrences
-			HashMap<String, Integer> similarPairs = new HashMap<String, Integer>();
+				// to store the pairs and their occurrences
+				HashMap<String, Integer> similarPairs = new HashMap<String, Integer>();
 
-			// for each vector, check each stage and mark all programs fall to the same
-			// bucket at least once
-			for (int i = 0; i < tokenVectors.size(); i++) {
-				// for each stage, mark all programs fall to the same bucket
-				for (int j = 0; j < lshHashes[i].length; j++) {
-					// search the counterpart of i
-					for (int k = i + 1; k < tokenVectors.size(); k++) {
-						if (lshHashes[i][j] == lshHashes[k][j]) {
-							// if the hash is similar, put that on similar pairs
+				// for each vector, check each stage and mark all programs fall to the same
+				// bucket at least once
+				for (int i = 0; i < tokenVectors.size(); i++) {
 
-							// set the key
-							String key = k + " " + i;
-							if (i < k)
-								key = i + " " + k;
+					// for each stage, mark all programs fall to the same bucket
+					for (int j = 0; j < lshHashes[i].length; j++) {
+						// search the counterpart of i
+						for (int k = i + 1; k < tokenVectors.size(); k++) {
+							if (lshHashes[i][j] == lshHashes[k][j]) {
+								// if the hash is similar, put that on similar pairs
 
-							// get current value if any
-							Integer val = similarPairs.get(key);
-							if (val == null)
-								val = 0;
+								// set the key
+								String key = k + " " + i;
+								if (i < k)
+									key = i + " " + k;
 
-							// update the new value
-							similarPairs.put(key, val + 1);
+								// get current value if any
+								Integer val = similarPairs.get(key);
+								if (val == null)
+									val = 0;
+
+								// update the new value
+								similarPairs.put(key, val + 1);
+							}
 						}
 					}
 				}
-			}
 
-			// for each similar pair, do the comparison
-			Iterator<Entry<String, Integer>> itSimilarPairs = similarPairs.entrySet().iterator();
-			while (itSimilarPairs.hasNext()) {
-				Entry<String, Integer> en = itSimilarPairs.next();
+				// for each similar pair, do the comparison
+				Iterator<Entry<String, Integer>> itSimilarPairs = similarPairs.entrySet().iterator();
+				while (itSimilarPairs.hasNext()) {
+					Entry<String, Integer> en = itSimilarPairs.next();
 
-				String[] cur = en.getKey().split(" ");
+					String[] cur = en.getKey().split(" ");
 
-				// get the pair
-				int submissionID1 = Integer.parseInt(cur[0]);
-				int submissionID2 = Integer.parseInt(cur[1]);
+					// get the pair
+					int submissionID1 = Integer.parseInt(cur[0]);
+					int submissionID2 = Integer.parseInt(cur[1]);
 
-				HashMap<String, ArrayList<Integer>> tokenIndex1 = tokenIndexes.get(submissionID1);
-				HashMap<String, ArrayList<Integer>> tokenIndex2 = tokenIndexes.get(submissionID2);
-
-				// generate the matches
-				ArrayList<GSTMatchTuple> matches = MatchGenerator.generateMatches(tokenIndex1, tokenIndex2,
-						minMatchLength);
-
-				// get the sim degree
-				int simDegree = (int) (MatchGenerator.calcAverageSimilarity(matches,
-						tokenStrings.get(submissionID1).size(), tokenStrings.get(submissionID2).size()) * 100);
-
-				if (simDegree >= simThreshold) {
 					String dirname1 = assignments[submissionID1].getName();
 					String dirname2 = assignments[submissionID2].getName();
 
-					File code1 = CodeReader.getCode(assignments[submissionID1], progLang);
-					File code2 = CodeReader.getCode(assignments[submissionID2], progLang);
+					HashMap<String, ArrayList<Integer>> tokenIndex1 = tokenIndexes.get(submissionID1);
+					HashMap<String, ArrayList<Integer>> tokenIndex2 = tokenIndexes.get(submissionID2);
 
-					// to deal with non-code directories and files
-					if (code1 == null || code2 == null)
-						continue;
+					// generate the matches
+					ArrayList<GSTMatchTuple> matches = MatchGenerator.generateMatches(tokenIndex1, tokenIndex2,
+							minMatchLength);
+
+					// get the sim degree
+					int simDegree = (int) (MatchGenerator.calcAverageSimilarity(matches,
+							tokenStrings.get(submissionID1).size(), tokenStrings.get(submissionID2).size()) * 100);
+
+					// add the sim degrees except for AI sample
+					if (!(dirname1.equals(aiSubName) || dirname2.equals(aiSubName))) {
+						simPerSubmission[submissionID1] += simDegree;
+						simPerSubmission[submissionID2] += simDegree;
+					}
 
 					// if the surface index is not empty, then calculate surface sim
 					double surfaceSimDegree = -1;
@@ -718,53 +1276,180 @@ public class FastComparer {
 
 						surfaceSimDegree = (int) (MatchGenerator.calcAverageSimilarity(surfaceMatches,
 								tokenStrings.get(submissionID1).size(), tokenStrings.get(submissionID2).size()) * 100);
+
+						// add the sim degrees except for AI sample
+						if (!(dirname1.equals(aiSubName) || dirname2.equals(aiSubName))) {
+							surSimPerSubmission[submissionID1] += surfaceSimDegree;
+							surSimPerSubmission[submissionID2] += surfaceSimDegree;
+						}
 					}
 
-					// add the comparison pair
-					ComparisonPairTuple ct = new ComparisonPairTuple(submissionID1, submissionID2, dirname1, dirname2,
-							simDegree, surfaceSimDegree, en.getValue(), matches);
-					codePairs.add(ct);
+					int overallSimDegree = simDegree;
+					if (isSensitive)
+						overallSimDegree = (int) ((simDegree + surfaceSimDegree) / 2);
+
+					if (overallSimDegree >= simThreshold) {
+
+						File code1 = CodeReader.getCode(assignments[submissionID1], progLang);
+						File code2 = CodeReader.getCode(assignments[submissionID2], progLang);
+
+						// to deal with non-code directories and files
+						if (code1 == null || code2 == null)
+							continue;
+
+						if (dirname1.equals(aiSubName) || dirname2.equals(aiSubName)) {
+							// if one of them is AI sample, direct the result to anomaly list
+							/*
+							 * if submission j is AI sample, the anomaly submission is k. Otherwise the
+							 * anomaly is j.
+							 */
+							int anomalySubIdx = submissionID2;
+							if (dirname2.equals(aiSubName))
+								anomalySubIdx = submissionID1;
+							anomalies.add(new AnomalyTuple(anomalySubIdx, assignments[anomalySubIdx].getName(), -1,
+									overallSimDegree));
+
+							// add the comparison pair for AI
+							aiCodePairs.add(new ComparisonPairTuple(submissionID1, submissionID2, dirname1, dirname2,
+									simDegree, surfaceSimDegree, 1, matches));
+
+						} else {
+							// add the comparison pair
+							ComparisonPairTuple ct = new ComparisonPairTuple(submissionID1, submissionID2, dirname1,
+									dirname2, simDegree, surfaceSimDegree, en.getValue(), matches);
+							codePairs.add(ct);
+						}
+					}
 				}
-			}
 
-			// sort in descending order based on average syntax
-			Collections.sort(codePairs);
+				// sort in descending order based on average syntax
+				Collections.sort(codePairs);
 
-			// remove extra pairs
-			while (codePairs.size() > maxPairs) {
-				codePairs.remove(codePairs.size() - 1);
-			}
+				// remove extra pairs
+				while (codePairs.size() > maxPairs) {
+					codePairs.remove(codePairs.size() - 1);
+				}
 
-			// generate similarity reports
-			for (int i = 0; i < codePairs.size(); i++) {
-				ComparisonPairTuple ct = codePairs.get(i);
-				String syntacticFilename = "obs" + i + ".html";
-				String syntacticFilepath = resultPath + File.separator + syntacticFilename;
+				for (int j = 0; j < simPerSubmission.length; j++) {
+					// exclude AI code sample
+					if (assignments[j].getName().equals(aiSubName))
+						continue;
 
-				File code1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], progLang);
-				File code2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], progLang);
+					int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+					if (isSensitive)
+						overallDissim = 100
+								- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+					if (overallDissim >= dissimThreshold) {
+						/*
+						 * if there are anomaly tuples resulted from comparison with AI, just update the
+						 * syntax dissim
+						 */
+						boolean isFound = false;
+						for (int i = 0; i < anomalies.size(); i++) {
+							AnomalyTuple a = anomalies.get(i);
+							if (a.getSubmissionID() == j) {
+								isFound = true;
+								a.setSyntaxDissim(overallDissim);
+							}
+						}
 
-				// set the path to comparison pair tuple
-				ct.setResultedHTMLFilename(syntacticFilename);
+						if (isFound == false)
+							anomalies.add(new AnomalyTuple(j, assignments[j].getName(), overallDissim, -1));
+					}
+				}
+				// sort
+				Collections.sort(anomalies);
+				// remove extra submissions
+				while (anomalies.size() > maxPairs) {
+					anomalies.remove(anomalies.size() - 1);
+				}
 
-				if (progLang.equals("py")) {
-					PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							ct.getMatches());
-				} else {
-					HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
-							tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
-							ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
-							syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
-							ct.getMatches());
+				// generate anomaly reports
+				for (int i = 0; i < anomalies.size(); i++) {
+					AnomalyTuple ct = anomalies.get(i);
+					String syntacticFilename = "uni" + i + ".html";
+					String syntacticFilepath = resultPath + File.separator + syntacticFilename;
+					ct.setResultedHTMLFilename(syntacticFilename);
+
+					File code1 = CodeReader.getCode(assignments[ct.getSubmissionID()], progLang);
+
+					UniqueCodeHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), ct.getAssignmentName(),
+							MainFrame.dissimTemplatePath, syntacticFilepath, humanLang, ct.getDissimResult());
+					if (ct.getAiSim() != -1) {
+						// generate similarity report comparing with AI
+						syntacticFilename = "oai" + i + ".html";
+						syntacticFilepath = resultPath + File.separator + syntacticFilename;
+
+						// search the code pair calculated before
+						ComparisonPairTuple selected = null;
+						for (int j = 0; j < aiCodePairs.size(); j++) {
+							ComparisonPairTuple ct2 = aiCodePairs.get(j);
+							if (ct2.getSubmissionID1() == ct.getSubmissionID()
+									|| ct2.getSubmissionID2() == ct.getSubmissionID()) {
+								selected = ct2;
+							}
+						}
+
+						if (selected != null) {
+							// generate the ai comparison
+							selected.setResultedHTMLFilename(syntacticFilename);
+
+							code1 = CodeReader.getCode(assignments[selected.getSubmissionID1()], progLang);
+							File code2 = CodeReader.getCode(assignments[selected.getSubmissionID2()], progLang);
+
+							// set the path to comparison pair tuple
+							ct.setResultedAIHTMLFilename(syntacticFilename);
+
+							if (progLang.equals("py")) {
+								PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(),
+										code2.getAbsolutePath(), tokenStrings.get(selected.getSubmissionID1()),
+										tokenStrings.get(selected.getSubmissionID2()), selected.getAssignmentName1(),
+										selected.getAssignmentName2(), MainFrame.pairTemplatePath, syntacticFilepath,
+										minMatchLength, selected.getSameClusterOccurrences(), humanLang,
+										selected.getMatches());
+							} else {
+								HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+										tokenStrings.get(selected.getSubmissionID1()),
+										tokenStrings.get(selected.getSubmissionID2()), selected.getAssignmentName1(),
+										selected.getAssignmentName2(), MainFrame.pairTemplatePath, syntacticFilepath,
+										minMatchLength, selected.getSameClusterOccurrences(), humanLang,
+										selected.getMatches());
+							}
+						}
+					}
+				}
+
+				// generate similarity reports
+				for (int i = 0; i < codePairs.size(); i++) {
+					ComparisonPairTuple ct = codePairs.get(i);
+					String syntacticFilename = "obs" + i + ".html";
+					String syntacticFilepath = resultPath + File.separator + syntacticFilename;
+
+					File code1 = CodeReader.getCode(assignments[ct.getSubmissionID1()], progLang);
+					File code2 = CodeReader.getCode(assignments[ct.getSubmissionID2()], progLang);
+
+					// set the path to comparison pair tuple
+					ct.setResultedHTMLFilename(syntacticFilename);
+
+					if (progLang.equals("py")) {
+						PythonHtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+								tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+								ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
+								syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
+								ct.getMatches());
+					} else {
+						HtmlGenerator.generateHtmlForSSTRANGE(code1.getAbsolutePath(), code2.getAbsolutePath(),
+								tokenStrings.get(ct.getSubmissionID1()), tokenStrings.get(ct.getSubmissionID2()),
+								ct.getAssignmentName1(), ct.getAssignmentName2(), MainFrame.pairTemplatePath,
+								syntacticFilepath, minMatchLength, ct.getSameClusterOccurrences(), humanLang,
+								ct.getMatches());
+					}
 				}
 			}
 
 			// generate the index HTML
-			IndexHTMLGenerator.generateHtml(dirPath, codePairs, MainFrame.indexTemplatePath, resultPath, simThreshold,
-					humanLang);
+			IndexHTMLGenerator.generateHtml(dirPath, codePairs, anomalies, MainFrame.indexTemplatePath, resultPath,
+					simThreshold, dissimThreshold, humanLang);
 			// generate additional files
 			STRANGEPairGenerator.generateAdditionalDir(resultPath);
 

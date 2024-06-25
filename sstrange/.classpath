@@ -13,5 +13,6 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="JARS/java-lsh-0.12.jar"/>
 	<classpathentry kind="lib" path="JARS/antlr-4.11.1.jar"/>
+	<classpathentry kind="lib" path="JARS/commons-io-2.16.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

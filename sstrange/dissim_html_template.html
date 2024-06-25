@@ -1,0 +1,319 @@
+<html>
+	<head>
+		<title> Dissimilarity of @codepath1 </title>
+		<link rel="icon" href="strange_html_layout_additional_files/icon.png">
+		<!-- Google Prettify to generate highlight https://github.com/google/code-prettify -->
+		<!-- <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script> -->
+		<script src="strange_html_layout_additional_files/run_prettify.js"></script>
+		<script>
+			/* for tabbed view. copied and modified from https://www.w3schools.com/howto/howto_js_tabs.asp */
+			function construct(){
+				// invoke the first code panel so that it is displayed
+				document.getElementById("origbutton").click();
+			}
+			// function to change tab
+			function openTab(evt, tabName, tableId) {
+			  // Declare all variables
+			  var i, tabcontent, tablinks;
+			  // Get all elements with class="tabcontent" and hide them
+			  tabcontent = document.getElementsByClassName("tabcontent");
+			  for (i = 0; i < tabcontent.length; i++) {
+			    tabcontent[i].style.display = "none";
+			  }
+			  // Get all elements with class="tablinks" and remove the class "active"
+			  tablinks = document.getElementsByClassName("tablinks");
+			  for (i = 0; i < tablinks.length; i++) {
+			    tablinks[i].className = tablinks[i].className.replace(" active", "");
+			  }
+			  // Show the current tab, and add an "active" class to the button that opened the tab
+			  document.getElementById(tabName).style.display = "block";
+			  evt.currentTarget.className += " active";
+			}
+		</script>
+		<style>
+			body{
+				font-family: "Times New Roman", Times, serif;
+				font-size: 14px;
+			}
+			a{
+				text-decoration: none;
+				color: black;
+			}
+
+			/* copied and modified from https://www.w3schools.com/css/css3_buttons.asp */
+			button {
+				background-color: rgba(0,140,186,1);
+				border: none;
+				color: white;
+				padding: 2px 4px;
+				text-align: center;
+				text-decoration: none;
+				display: inline-block;
+				cursor: pointer;
+			}
+			/* ===*/
+
+			/* for info panel at top */
+			div.settingpanel{
+				float:left;
+				width:100%;
+			}
+
+			/* for code view */
+			div.codeview{
+				float:left;
+				width: 100%;
+				height:90%;
+				margin-top:-10px;
+			}
+			pre{
+				tab-size: 2;
+				overflow: auto;
+				width: 100%;
+				height:100%;
+				float:left;
+			}
+			.syntaxsim{
+				background-color:rgba(244,211,214,1);
+			}
+			/* copied from https://stackoverflow.com/questions/8399547/how-to-add-line-numbers-to-all-lines-in-google-prettify
+			 to make each line numbered */
+			.linenums li {
+					list-style-type: decimal;
+			}
+			/* ===*/
+
+			/* for tabbed view. copied and modified from https://www.w3schools.com/howto/howto_js_tabs.asp */
+			.tab {
+			  float:left;
+				width:100%;
+				background-color: rgba(0,140,186,1);
+			}
+			button.tablinks {
+				border:none;
+				outline: none;
+			  float: left;
+			  cursor: pointer;
+			  padding: 6px 20px;
+				height:30px;
+			  transition: 0.3s;
+			}
+			.tab button:hover {
+			  background-color: rgba(20,160,206,1);
+			}
+			.tab button.active {
+			  background-color: rgba(40,180,226,1);
+			}
+			div.tabcontent {
+				float:left;
+				width:99%;
+				height:80%;
+				display: none;
+				border-top: none;
+			}
+
+			span.infotitle{
+				margin-top:10px;
+				float:left;
+				width: 98%;
+				height:4%;
+				font-size: 14px;
+				font-weight: bold;
+			}
+
+			/* for table, copied and modified from https://www.w3schools.com/html/tryit.asp?filename=tryhtml_table_intro*/
+			div.tablecontainer{
+				float:left;
+				width: 100%;
+				height:40%;
+			}
+			div.tableheader{
+				float:left;
+				width: 100%;
+				height:20%;
+				margin-bottom:-10px;
+			}
+			div.tablecontentcontainer{
+				float:left;
+				width: 100%;
+				height:80%;
+				overflow-y:scroll;
+				overflow-x: hidden;
+				border: 1px solid #dddddd;
+			}
+			table {
+				width:100%;
+			  font-family: inherit;
+				font-size: inherit;
+			  border-collapse: collapse;
+			}
+			table.header {
+				width:97.5%;
+			}
+			td, th {
+			  border: 1px solid #dddddd;
+			  text-align: center;
+			}
+			td{
+				width:20%;
+				padding: 2px;
+			}
+			th{
+				border-top: none;
+				background-color: rgba(0,140,186,1);
+				color: white;
+				padding: 4px 8px;
+				text-align: center;
+				text-decoration: none;
+				font-weight: normal;
+				width:20%;
+				height:100%;
+				cursor: pointer;
+			}
+			tr:nth-child(even) {
+			  background-color: #eeeeee;
+			}
+			tr{
+				cursor: pointer;
+			}
+
+			div.explanation{
+				float:left;
+				width: 100%;
+				height:45.5%;
+				border: 1px solid #aaaaaa;
+				overflow-y:auto;
+				overflow-x:hidden;
+			}
+			div.explanationcontent{
+				float:left;
+				width:98%;
+				padding:1%;
+				display: none;
+				text-align: justify;
+			}
+
+			/* only for summary table which only has 4 columns instead of 5 */
+			th.thsum{
+				width:25%;
+			}
+			td.tdsum{
+				width:25%;
+			}
+
+			/* only for table inside the explanation */
+			td.inexplanation, th.inexplanation {
+			  border: 1px solid black;
+			  text-align: center;
+			  padding: 0;
+			  height:16px;
+			  font-size: 12px;
+			}
+			th.inexplanation{
+				border: 1px solid black;
+				background-color: white;
+				color: black;
+				width:20%;
+				cursor: none;
+				font-weight:bold;
+			}
+			tr.inexplanation:nth-child(even) {
+			  background-color: white;
+			}
+			tr.inexplanation{
+				cursor: default;
+				padding: 0;
+				height:16px;
+				font-size: 12px;
+			}
+			img.sortpic{
+				float:right;
+				width:12px;
+				margin-bottom:0px;
+			}
+			
+			div.embeddiv{
+				float:left;
+				width:100%;
+				margin-bottom:10px;
+			}
+			div.embedimage{
+				float:left;
+				margin-right:20px;
+			}
+			div.embedx{
+				float:left;
+				font-size:24px;
+				margin-top:10px;
+				margin-left:5px;
+				margin-right:5px;
+			}
+			img.embedimage{
+				float:left;
+				height:50px;
+			}
+			a.embedbutton{
+				font-size:16px;
+				border:none;
+				outline: none;
+				float: left;
+				cursor: pointer;
+				padding: 10px 20px;
+				padding-bottom:0px;
+				height:30px;
+				transition: 0.3s;
+				background-color: rgba(0,140,186,1);
+				color: white;
+				margin-top:5px;
+				text-decoration: none;
+			}
+			a.embedbutton:hover {
+			  background-color: rgba(20,160,206,1);
+			}
+			a.embedactive {
+			  background-color: rgba(40,180,226,1);
+			}
+			hr{
+				margin-bottom:10px;
+			}
+			
+			div.header{
+				float:left;
+				font-size:20px;
+				font-weight:bold;
+				margin-top:15px;
+			}
+
+			div.columndiv{
+				float:left;
+				width: 100%;
+			}
+
+		</style>
+	</head>
+	<body onload="construct()">
+		<div class="settingpanel">
+			<div class="embeddiv"> 
+				<div class="embedimage">
+					<img class="embedimage" src="strange_html_layout_additional_files/logo.png" alt="logo STRANGE">
+				</div>
+				<div class="header"> @codepath1</div>
+			</div>
+			<hr />
+
+			<div class="tab">
+			  <button id="origbutton" class="tablinks" onclick="openTab(event, 'orig', 'origtablecontent')">Code</button>
+			  <button class="tablinks" onclick="window.open('index.html', '_self');">Back</button>
+			</div>
+		</div>
+		<div id="orig" class="tabcontent">
+			<div class="columndiv" style="margin-right:20px">
+				<span class="infotitle"> Submission: </span>
+				<div class="codeview">
+					<pre class="prettyprint linenums">@code1
+					</pre>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

@@ -38,6 +38,52 @@ public class FeedbackMessageGenerator {
 		return messages;
 	}
 
+	public static void markUnmatchedTokensinString1(ArrayList<GSTMatchTuple> matches,
+			ArrayList<ArrayList<Integer>> tokenString1Mismatch, int minimumMatchLength, int submission2ID,
+			boolean isSWapped) {
+		/*
+		 * update mismatches in the tokenString1Mismatch but only the long ones. If
+		 * swapped, then the position is text instead of pattern
+		 */
+
+		// generate the matches
+		boolean[] tokenString1Match = new boolean[tokenString1Mismatch.size()];
+		if (isSWapped == false) {
+			// submission 1 is on the text
+			for (GSTMatchTuple m : matches) {
+				for (int i = m.textPosition; i < m.textPosition + m.length; i++) {
+					tokenString1Match[i] = true;
+				}
+			}
+		} else {
+			// submission 1 is on the pattern
+			for (GSTMatchTuple m : matches) {
+				for (int i = m.patternPosition; i < m.patternPosition + m.length; i++) {
+					tokenString1Match[i] = true;
+				}
+			}
+		}
+		// update the mismatches
+		int startMismatch = 0;
+		for (int i = 0; i < tokenString1Match.length; i++) {
+			if (tokenString1Match[i] == true) {
+				if (i - startMismatch >= minimumMatchLength) {
+					// if length is enough, mark the mismatch array
+					// i is excluded as it is a match
+					for (int j = startMismatch; j < i; j++) {
+						tokenString1Mismatch.get(j).add(submission2ID);
+					}
+				}
+
+				// update the startMismatch
+				while (i < tokenString1Match.length && tokenString1Match[i] == true) {
+					i++;
+				}
+				startMismatch = i;
+			}
+		}
+	}
+
 	public static ArrayList<GSTMatchTuple> generateMatchedTuples(ArrayList<FeedbackToken> tokenString1,
 			ArrayList<FeedbackToken> tokenString2, int minimumMatchLength, boolean isSensitive) {
 		// create array of string for both whitespace strings

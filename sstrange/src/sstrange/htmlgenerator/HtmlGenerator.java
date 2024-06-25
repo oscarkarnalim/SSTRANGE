@@ -1,4 +1,4 @@
-package sstrange.language;
+package sstrange.htmlgenerator;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -8,9 +8,6 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import sstrange.htmlgenerator.Code1FeedbackComparator;
-import sstrange.htmlgenerator.Code2FeedbackComparator;
-import sstrange.htmlgenerator.HtmlTableStringGenerator;
 import sstrange.message.FeedbackMessage;
 import sstrange.message.FeedbackMessageGenerator;
 import sstrange.message.SyntaxFeedbackMessage;

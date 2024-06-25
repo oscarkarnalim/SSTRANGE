@@ -39,15 +39,18 @@ public class MainFrame extends JFrame {
 
 	public static String pairTemplatePath = "pair_html_template.html";
 	public static String pairWebTemplatePath = "pair_html_template_web.html";
-	public static String indexTemplatePath = "core_html_template.html";
+	public static String dissimTemplatePath = "dissim_html_template.html";
+	public static String dissimWebTemplatePath = "dissim_html_template_web.html";
+	public static String indexTemplatePath = "core_html_template_v2.html";
 	public static String javaAdditionalKeywords = "java_keywords.txt";
 	public static String pyAdditionalKeywords = "python_keywords.txt";
 	public static String additional_dir_path = "strange_html_layout_additional_files";
 
 	private JPanel contentPane;
 	private JTextField assignmentPathField;
-	private JTextField simThresholdField;
+	private JTextField simThresholdField, dissimThresholdField;
 	private JTextField templateDirPathField;
+	private JTextField aiSubPathField;
 	private JTextField minMatchLengthField;
 	private JComboBox submissionTypeField;
 	private JComboBox commonCodeField;
@@ -101,7 +104,7 @@ public class MainFrame extends JFrame {
 		setResizable(false);
 		setTitle("SSTRANGE");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 580, 600);
+		setBounds(100, 100, 580, 650);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
@@ -124,7 +127,7 @@ public class MainFrame extends JFrame {
 		assignmentPathField.setBackground(SystemColor.controlHighlight);
 		assignmentPathField.setHorizontalAlignment(SwingConstants.LEFT);
 		assignmentPathField.setFont(new Font("Times New Roman", Font.PLAIN, 14));
-		assignmentPathField.setBounds(250, 21, 220, 30);
+		assignmentPathField.setBounds(250, 21, 240, 30);
 		contentPane.add(assignmentPathField);
 		assignmentPathField.setColumns(200);
 
@@ -134,7 +137,7 @@ public class MainFrame extends JFrame {
 				fileChooser("Select your assignment root directory", assignmentPathField);
 			}
 		});
-		btnNewButton.setBounds(469, 20, 30, 32);
+		btnNewButton.setBounds(489, 20, 30, 32);
 		contentPane.add(btnNewButton);
 
 		JLabel lblSubmissionType = new JLabel("Submission type :");
@@ -147,14 +150,14 @@ public class MainFrame extends JFrame {
 		submissionTypeField.setFont(new Font("Times New Roman", Font.PLAIN, 14));
 		submissionTypeField.setModel(new DefaultComboBoxModel(
 				new String[] { "Single file", "Multiple files in a directory", "Multiple files in a zip" }));
-		submissionTypeField.setBounds(250, 70, 249, 30);
+		submissionTypeField.setBounds(250, 70, 269, 30);
 		contentPane.add(submissionTypeField);
 
 		progLangField = new JComboBox();
 		progLangField.setModel(new DefaultComboBoxModel(
 				new String[] { "Java", "Python", "C#", "Dart", "Web (HTML, JS, CSS and PHP)" }));
 		progLangField.setFont(new Font("Times New Roman", Font.PLAIN, 14));
-		progLangField.setBounds(250, 120, 249, 30);
+		progLangField.setBounds(250, 120, 269, 30);
 		contentPane.add(progLangField);
 
 		JLabel lblProgrammingLanguage = new JLabel("Submission language :");
@@ -166,34 +169,84 @@ public class MainFrame extends JFrame {
 		humanLangField = new JComboBox();
 		humanLangField.setModel(new DefaultComboBoxModel(new String[] { "English", "Indonesian" }));
 		humanLangField.setFont(new Font("Times New Roman", Font.PLAIN, 14));
-		humanLangField.setBounds(250, 170, 249, 30);
+		humanLangField.setBounds(250, 170, 269, 30);
 		contentPane.add(humanLangField);
 
 		JLabel lblHumanLanguage = new JLabel("Explanation language :");
 		lblHumanLanguage.setHorizontalAlignment(SwingConstants.LEFT);
 		lblHumanLanguage.setFont(new Font("Times New Roman", Font.PLAIN, 16));
-		lblHumanLanguage.setBounds(20, 170, 142, 30);
+		lblHumanLanguage.setBounds(20, 170, 152, 30);
 		contentPane.add(lblHumanLanguage);
+
+		JLabel lblMinSimThreshold_1 = new JLabel("Sim");
+		lblMinSimThreshold_1.setHorizontalAlignment(SwingConstants.LEFT);
+		lblMinSimThreshold_1.setFont(new Font("Times New Roman", Font.PLAIN, 16));
+		lblMinSimThreshold_1.setBounds(250, 221, 56, 30);
+		contentPane.add(lblMinSimThreshold_1);
 
 		simThresholdField = new JTextField();
 		simThresholdField.setText("75");
 		simThresholdField.setHorizontalAlignment(SwingConstants.LEFT);
 		simThresholdField.setFont(new Font("Times New Roman", Font.PLAIN, 14));
 		simThresholdField.setColumns(10);
-		simThresholdField.setBounds(250, 221, 56, 30);
+		simThresholdField.setBounds(285, 221, 56, 30);
 		contentPane.add(simThresholdField);
 
-		JLabel lblMinSimThreshold = new JLabel("Min. similarity threshold :");
+		lblMinSimThreshold_1 = new JLabel("%");
+		lblMinSimThreshold_1.setHorizontalAlignment(SwingConstants.LEFT);
+		lblMinSimThreshold_1.setFont(new Font("Times New Roman", Font.PLAIN, 16));
+		lblMinSimThreshold_1.setBounds(345, 220, 50, 30);
+		contentPane.add(lblMinSimThreshold_1);
+
+		lblMinSimThreshold_1 = new JLabel("Dissim");
+		lblMinSimThreshold_1.setHorizontalAlignment(SwingConstants.LEFT);
+		lblMinSimThreshold_1.setFont(new Font("Times New Roman", Font.PLAIN, 16));
+		lblMinSimThreshold_1.setBounds(390, 221, 56, 30);
+		contentPane.add(lblMinSimThreshold_1);
+
+		dissimThresholdField = new JTextField();
+		dissimThresholdField.setText("90");
+		dissimThresholdField.setHorizontalAlignment(SwingConstants.LEFT);
+		dissimThresholdField.setFont(new Font("Times New Roman", Font.PLAIN, 14));
+		dissimThresholdField.setColumns(10);
+		dissimThresholdField.setBounds(440, 221, 56, 30);
+		contentPane.add(dissimThresholdField);
+
+		lblMinSimThreshold_1 = new JLabel("%");
+		lblMinSimThreshold_1.setHorizontalAlignment(SwingConstants.LEFT);
+		lblMinSimThreshold_1.setFont(new Font("Times New Roman", Font.PLAIN, 16));
+		lblMinSimThreshold_1.setBounds(500, 220, 50, 30);
+		contentPane.add(lblMinSimThreshold_1);
+
+		JLabel lblMinSimThreshold = new JLabel("Min. thresholds :");
 		lblMinSimThreshold.setHorizontalAlignment(SwingConstants.LEFT);
 		lblMinSimThreshold.setFont(new Font("Times New Roman", Font.PLAIN, 16));
 		lblMinSimThreshold.setBounds(20, 220, 209, 30);
 		contentPane.add(lblMinSimThreshold);
 
-		JLabel lblMinSimThreshold_1 = new JLabel("%");
-		lblMinSimThreshold_1.setHorizontalAlignment(SwingConstants.LEFT);
-		lblMinSimThreshold_1.setFont(new Font("Times New Roman", Font.PLAIN, 16));
-		lblMinSimThreshold_1.setBounds(316, 220, 130, 30);
-		contentPane.add(lblMinSimThreshold_1);
+		aiSubPathField = new JTextField();
+		aiSubPathField.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				fileChooser("Select your AI generated sample submission (directory)", aiSubPathField);
+			}
+		});
+		aiSubPathField.setEditable(false);
+		aiSubPathField.setBackground(SystemColor.controlHighlight);
+		aiSubPathField.setHorizontalAlignment(SwingConstants.LEFT);
+		aiSubPathField.setFont(new Font("Times New Roman", Font.PLAIN, 14));
+		aiSubPathField.setColumns(200);
+		aiSubPathField.setBounds(250, 470, 240, 30);
+		contentPane.add(aiSubPathField);
+
+		JButton btnNewButton_1 = new JButton("...");
+		btnNewButton_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				fileChooser("Select your AI generated sample submission (directory)", aiSubPathField);
+			}
+		});
+		btnNewButton_1.setBounds(490, 469, 30, 32);
+		contentPane.add(btnNewButton_1);
 
 		templateDirPathField = new JTextField();
 		templateDirPathField.addMouseListener(new MouseAdapter() {
@@ -207,16 +260,16 @@ public class MainFrame extends JFrame {
 		templateDirPathField.setHorizontalAlignment(SwingConstants.LEFT);
 		templateDirPathField.setFont(new Font("Times New Roman", Font.PLAIN, 14));
 		templateDirPathField.setColumns(200);
-		templateDirPathField.setBounds(250, 370, 220, 30);
+		templateDirPathField.setBounds(250, 370, 240, 30);
 		contentPane.add(templateDirPathField);
 
-		JButton btnNewButton_1 = new JButton("...");
+		btnNewButton_1 = new JButton("...");
 		btnNewButton_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				fileChooser("Select your template code directory", templateDirPathField);
 			}
 		});
-		btnNewButton_1.setBounds(470, 369, 30, 32);
+		btnNewButton_1.setBounds(490, 369, 30, 32);
 		contentPane.add(btnNewButton_1);
 
 		JLabel lblTemplateCodePath = new JLabel("Template directory path :");
@@ -242,6 +295,12 @@ public class MainFrame extends JFrame {
 		JLabel lblReportedSimilarities = new JLabel("Similarity measurement :");
 		lblReportedSimilarities.setHorizontalAlignment(SwingConstants.LEFT);
 		lblReportedSimilarities.setFont(new Font("Times New Roman", Font.PLAIN, 16));
+		lblReportedSimilarities.setBounds(20, 520, 178, 30);
+		contentPane.add(lblReportedSimilarities);
+
+		lblReportedSimilarities = new JLabel("AI generated sample :");
+		lblReportedSimilarities.setHorizontalAlignment(SwingConstants.LEFT);
+		lblReportedSimilarities.setFont(new Font("Times New Roman", Font.PLAIN, 16));
 		lblReportedSimilarities.setBounds(20, 470, 178, 30);
 		contentPane.add(lblReportedSimilarities);
 
@@ -252,7 +311,7 @@ public class MainFrame extends JFrame {
 			}
 		});
 		proceedBtn.setFont(new Font("Times New Roman", Font.PLAIN, 14));
-		proceedBtn.setBounds(20, 520, 120, 30);
+		proceedBtn.setBounds(20, 570, 120, 30);
 		contentPane.add(proceedBtn);
 
 		JButton btnNewButton_2_1 = new JButton("Refresh");
@@ -262,13 +321,13 @@ public class MainFrame extends JFrame {
 			}
 		});
 		btnNewButton_2_1.setFont(new Font("Times New Roman", Font.PLAIN, 14));
-		btnNewButton_2_1.setBounds(220, 520, 120, 30);
+		btnNewButton_2_1.setBounds(220, 570, 120, 30);
 		contentPane.add(btnNewButton_2_1);
 
 		commonCodeField = new JComboBox();
 		commonCodeField.setModel(new DefaultComboBoxModel(new String[] { "Allow", "Disallow" }));
 		commonCodeField.setFont(new Font("Times New Roman", Font.PLAIN, 14));
-		commonCodeField.setBounds(250, 420, 249, 30);
+		commonCodeField.setBounds(250, 420, 269, 30);
 		contentPane.add(commonCodeField);
 
 		JLabel lblCommonCode = new JLabel("Common content :");
@@ -284,10 +343,10 @@ public class MainFrame extends JFrame {
 			}
 		});
 		btnNewButton_2_1_1.setFont(new Font("Times New Roman", Font.PLAIN, 14));
-		btnNewButton_2_1_1.setBounds(420, 520, 120, 30);
+		btnNewButton_2_1_1.setBounds(420, 570, 120, 30);
 		contentPane.add(btnNewButton_2_1_1);
 
-		JLabel lblMaximumReportedProgram = new JLabel("Max. reported submission pairs :");
+		JLabel lblMaximumReportedProgram = new JLabel("Max. num of reports :");
 		lblMaximumReportedProgram.setHorizontalAlignment(SwingConstants.LEFT);
 		lblMaximumReportedProgram.setFont(new Font("Times New Roman", Font.PLAIN, 16));
 		lblMaximumReportedProgram.setBounds(20, 270, 231, 30);
@@ -307,7 +366,7 @@ public class MainFrame extends JFrame {
 						"Sensitive Super-Bit", "Sensitive Jaccard", "Sensitive Cosine", "Sensitive RKRGST" }));
 		similarityMeasurement.setSelectedIndex(0);
 		similarityMeasurement.setFont(new Font("Times New Roman", Font.PLAIN, 14));
-		similarityMeasurement.setBounds(250, 470, 249, 30);
+		similarityMeasurement.setBounds(250, 520, 269, 30);
 		contentPane.add(similarityMeasurement);
 	}
 
@@ -326,8 +385,10 @@ public class MainFrame extends JFrame {
 		// refresh all fields
 		assignmentPathField.setText("");
 		simThresholdField.setText("75");
+		dissimThresholdField.setText("90");
 		maxPairsField.setText("10");
 		templateDirPathField.setText("");
+		aiSubPathField.setText("");
 		minMatchLengthField.setText("20");
 		submissionTypeField.setSelectedIndex(0);
 		progLangField.setSelectedIndex(0);
@@ -375,6 +436,17 @@ public class MainFrame extends JFrame {
 				templateDirPath = path;
 		}
 
+		String aiSubPath = "";
+		path = aiSubPathField.getText();
+		if (path.length() > 0) {
+			// check whether the path is not valid
+			File f = new File(path);
+			if (f.exists() == false)
+				errorMessage += "The AI generated sample submission path does not exist\n";
+			else
+				aiSubPath = path;
+		}
+
 		// if not java and python but use template code, display an error message
 		if (templateDirPath.length() > 0 && !(progLangField.getSelectedItem().toString().equals("Java")
 				|| progLangField.getSelectedItem().toString().equals("Python")))
@@ -394,6 +466,18 @@ public class MainFrame extends JFrame {
 		} catch (Exception e) {
 			// if not parsed correctly, the input is not integer
 			errorMessage += "The similarity threshold should be an integer\n";
+		}
+
+		int dissimThreshold = 0;
+		text = dissimThresholdField.getText();
+		try {
+			dissimThreshold = Integer.parseInt(text);
+			if (dissimThreshold < 0 || dissimThreshold > 100)
+				// if not in range
+				errorMessage += "The dissimilarity threshold should be from 0 to 100 inclusive\n";
+		} catch (Exception e) {
+			// if not parsed correctly, the input is not integer
+			errorMessage += "The dissimilarity threshold should be an integer\n";
 		}
 
 		int minMatchLength = 0;
@@ -477,9 +561,9 @@ public class MainFrame extends JFrame {
 
 			// start processing
 			String resultPath = process(assignmentPath, submissionTypeField.getSelectedItem().toString(),
-					progLangField.getSelectedItem().toString(), humanLang, simThreshold, maxPairs, minMatchLength,
-					templateDirPath, commonCodeField.getSelectedIndex() == 0 ? true : false, similarityMeasurementType,
-					numClusters, numStages, isSensitive);
+					progLangField.getSelectedItem().toString(), humanLang, simThreshold, dissimThreshold, maxPairs,
+					minMatchLength, templateDirPath, commonCodeField.getSelectedIndex() == 0 ? true : false, aiSubPath,
+					similarityMeasurementType, numClusters, numStages, isSensitive);
 
 			if (resultPath != null) {
 				// set the clipboard
@@ -507,9 +591,9 @@ public class MainFrame extends JFrame {
 
 	private static void executeConsole(String[] args) {
 
-		// arguments should be 10 or 12
-		if (args.length != 11 && args.length != 13) {
-			System.out.println("Error: the arguments should be either 11 or 13\n");
+		// arguments should be 13 or 15
+		if (args.length != 13 && args.length != 15) {
+			System.out.println("Error: the arguments should be either 13 or 15\n");
 			return;
 		}
 
@@ -660,30 +744,53 @@ public class MainFrame extends JFrame {
 		javaAdditionalKeywords = resourcePath + File.separator + javaAdditionalKeywords;
 		pyAdditionalKeywords = resourcePath + File.separator + pyAdditionalKeywords;
 
+		int dissimThreshold = 0;
+		text = args[11];
+		try {
+			dissimThreshold = Integer.parseInt(text);
+			if (dissimThreshold < 0 || dissimThreshold > 100)
+				// if not in range
+				errorMessage += "12th argument: the dissimilarity threshold should be from 0 to 100 inclusive\n";
+		} catch (Exception e) {
+			// if not parsed correctly, the input is not integer
+			errorMessage += "12th argument: the dissimilarity threshold should be an integer\n";
+		}
+
+		String aiSubPath = "";
+		path = args[12];
+		if (path.equals("none") == false) {
+			// check whether the path is not valid
+			f = new File(path);
+			if (f.exists() == false)
+				errorMessage += "13th argument: the AI submission path does not exist\n";
+			else
+				aiSubPath = path;
+		}
+
 		int numClusters = 2;
 		int numStages = 1;
 
 		if (similarityMeasurementType.equals("MinHash") || similarityMeasurementType.equals("Super-Bit")) {
-			text = args[11];
+			text = args[13];
 			try {
 				numClusters = Integer.parseInt(text);
 				if (numClusters < 2)
 					// if not in range
-					errorMessage += "12th argument: the number of clusters should be at least 2\n";
+					errorMessage += "14th argument: the number of clusters should be at least 2\n";
 			} catch (Exception e) {
 				// if not parsed correctly, the input is not integer
-				errorMessage += "12th argument: the number of clusters should be an integer\n";
+				errorMessage += "14th argument: the number of clusters should be an integer\n";
 			}
 
-			text = args[12];
+			text = args[14];
 			try {
 				numStages = Integer.parseInt(text);
 				if (numStages < 1)
 					// if not in range
-					errorMessage += "13th argument: the number of stages should be at least 1\n";
+					errorMessage += "15th argument: the number of stages should be at least 1\n";
 			} catch (Exception e) {
 				// if not parsed correctly, the input is not integer
-				errorMessage += "13th argument: the number of stages should be an integer\n";
+				errorMessage += "15th argument: the number of stages should be an integer\n";
 			}
 		}
 
@@ -693,9 +800,9 @@ public class MainFrame extends JFrame {
 			// notification to wait
 			System.out.println("Please wait...");
 			// start processing
-			String resultPath = process(assignmentPath, submissionType, progLang, humanLang, simThreshold, maxPairs,
-					minMatchLength, templateDirPath, isCommonCodeAllowed, similarityMeasurementType, numClusters,
-					numStages, isSensitive);
+			String resultPath = process(assignmentPath, submissionType, progLang, humanLang, simThreshold,
+					dissimThreshold, maxPairs, minMatchLength, templateDirPath, isCommonCodeAllowed,
+					aiSubPath,similarityMeasurementType, numClusters, numStages, isSensitive);
 
 			if (resultPath != null) {
 				// notify user that the process has been completed
@@ -706,8 +813,9 @@ public class MainFrame extends JFrame {
 	}
 
 	public static String process(String assignmentPath, String submissionType, String progLang, String humanLang,
-			int simThreshold, int maxPairs, int minMatchingLength, String templateDirPath, boolean isCommonCodeAllowed,
-			String similarityMeasurement, int numClusters, int numStages, boolean isSensitive) {
+			int simThreshold, int dissimThreshold, int maxPairs, int minMatchingLength, String templateDirPath,
+			boolean isCommonCodeAllowed, String aiSubPath, String similarityMeasurement, int numClusters, int numStages,
+			boolean isSensitive) {
 
 		ArrayList<File> filesToBeDeleted = new ArrayList<File>();
 
@@ -744,23 +852,24 @@ public class MainFrame extends JFrame {
 		// to store result
 		ArrayList<ComparisonPairTuple> result;
 
-		long before = System.nanoTime();
+		// long before = System.nanoTime();
 		// do the comparison
 		if (progLang.equalsIgnoreCase("html"))
 			// exclusive for web as it handles js and css also
-			result = FastComparerWeb.doSyntacticComparison(assignmentPath, humanLang, simThreshold, minMatchingLength,
-					maxPairs, similarityMeasurement, assignmentFile, assignmentParentDirPath, assignmentName,
-					isMultipleFiles, isCommonCodeAllowed, filesToBeDeleted, numClusters, numStages, isSensitive);
+			result = FastComparerWeb.doSyntacticComparison(assignmentPath, humanLang, simThreshold, dissimThreshold,
+					minMatchingLength, maxPairs, similarityMeasurement, assignmentFile, assignmentParentDirPath,
+					assignmentName, isMultipleFiles, isCommonCodeAllowed, aiSubPath, filesToBeDeleted, numClusters,
+					numStages, isSensitive);
 		else
 			result = FastComparer.doSyntacticComparison(assignmentPath, progLang, humanLang, simThreshold,
-					minMatchingLength, maxPairs, templateDirPath, similarityMeasurement, assignmentFile,
-					assignmentParentDirPath, assignmentName, isMultipleFiles, isCommonCodeAllowed, filesToBeDeleted,
-					numClusters, numStages, isSensitive);
+					dissimThreshold, minMatchingLength, maxPairs, templateDirPath, similarityMeasurement,
+					assignmentFile, assignmentParentDirPath, assignmentName, isMultipleFiles, isCommonCodeAllowed,
+					aiSubPath, filesToBeDeleted, numClusters, numStages, isSensitive);
 
 		// start deleting all files
 		for (File f : filesToBeDeleted)
 			FileManipulator.deleteAllTemporaryFiles(f);
-		
+
 		// System.out.println("procesing time:\t" + (System.nanoTime() - before));
 
 		return assignmentParentDirPath + File.separator + "[out] " + assignmentName + File.separator + "index.html";
