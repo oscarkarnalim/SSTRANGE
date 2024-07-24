@@ -27,15 +27,15 @@ import sstrange.matchgenerator.ComparisonPairTuple;
 import sstrange.matchgenerator.ComparisonPairTupleWeb;
 import sstrange.matchgenerator.MatchGenerator;
 import sstrange.message.FeedbackMessageGenerator;
+import sstrange.support.stringmatching.GSTMatchTuple;
 import sstrange.token.FeedbackToken;
-import support.stringmatching.GSTMatchTuple;
 
 public class FastComparerWeb {
 
 	public static ArrayList<ComparisonPairTuple> doSyntacticComparison(String assignmentPath, String humanLang,
 			int simThreshold, int dissimThreshold, int minMatchingLength, int maxPairs, String similarityMeasurement,
 			File assignmentFile, String assignmentParentDirPath, String assignmentName, boolean isMultipleFiles,
-			boolean isCommonCodeAllowed, String aiSubPath, ArrayList<File> filesToBeDeleted, int numClusters,
+			String aiSubPath, ArrayList<File> filesToBeDeleted, int numClusters,
 			int numStages, boolean isSensitive) {
 
 		// add AI submission as one of the submissions if exist
@@ -526,10 +526,10 @@ public class FastComparerWeb {
 				if (assignments[j].getName().equals(aiSubName))
 					continue;
 
-				int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+				int overallDissim = 100 - (simPerSubmission[j] / (simPerSubmission.length-1));
 				if (isSensitive)
 					overallDissim = 100
-							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * (simPerSubmission.length-1)));
 				if (overallDissim >= dissimThreshold) {
 					/*
 					 * if there are anomaly tuples resulted from comparison with AI, just update the
@@ -792,10 +792,10 @@ public class FastComparerWeb {
 				if (assignments[j].getName().equals(aiSubName))
 					continue;
 
-				int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+				int overallDissim = 100 - (simPerSubmission[j] / (simPerSubmission.length-1));
 				if (isSensitive)
 					overallDissim = 100
-							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * (simPerSubmission.length-1)));
 				if (overallDissim >= dissimThreshold) {
 					/*
 					 * if there are anomaly tuples resulted from comparison with AI, just update the
@@ -1091,10 +1091,10 @@ public class FastComparerWeb {
 				if (assignments[j].getName().equals(aiSubName))
 					continue;
 
-				int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+				int overallDissim = 100 - (simPerSubmission[j] / (simPerSubmission.length-1));
 				if (isSensitive)
 					overallDissim = 100
-							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * (simPerSubmission.length-1)));
 				if (overallDissim >= dissimThreshold) {
 					/*
 					 * if there are anomaly tuples resulted from comparison with AI, just update the
@@ -1454,10 +1454,10 @@ public class FastComparerWeb {
 					if (assignments[j].getName().equals(aiSubName))
 						continue;
 
-					int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+					int overallDissim = 100 - (simPerSubmission[j] / (simPerSubmission.length-1));
 					if (isSensitive)
 						overallDissim = 100
-								- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+								- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * (simPerSubmission.length-1)));
 					if (overallDissim >= dissimThreshold) {
 						/*
 						 * if there are anomaly tuples resulted from comparison with AI, just update the
@@ -1818,10 +1818,10 @@ public class FastComparerWeb {
 					if (assignments[j].getName().equals(aiSubName))
 						continue;
 
-					int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+					int overallDissim = 100 - (simPerSubmission[j] / (simPerSubmission.length-1));
 					if (isSensitive)
 						overallDissim = 100
-								- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+								- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * (simPerSubmission.length-1)));
 					if (overallDissim >= dissimThreshold) {
 						/*
 						 * if there are anomaly tuples resulted from comparison with AI, just update the

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="JARS/c2s2.jar"/>
 	<classpathentry kind="lib" path="JARS/jsoup-1.11.3.jar"/>
 	<classpathentry kind="lib" path="JARS/lucene-analyzers-common-8.2.0.jar"/>
 	<classpathentry kind="lib" path="JARS/lucene-core-8.2.0.jar"/>

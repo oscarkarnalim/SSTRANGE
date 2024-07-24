@@ -1,19 +1,17 @@
 package sstrange;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import org.apache.commons.io.FileUtils;
-
 import info.debatty.java.lsh.LSHMinHash;
 import info.debatty.java.lsh.LSHSuperBit;
 import sstrange.anomaly.AICodeManipulator;
 import sstrange.anomaly.AnomalyTuple;
+import sstrange.evaluation.DissimilarityAIEval;
 import sstrange.htmlgenerator.CodeReader;
 import sstrange.htmlgenerator.HtmlGenerator;
 import sstrange.htmlgenerator.UniqueCodeHtmlGenerator;
@@ -28,15 +26,15 @@ import sstrange.lshcalculator.JaccardCalculator;
 import sstrange.matchgenerator.ComparisonPairTuple;
 import sstrange.matchgenerator.MatchGenerator;
 import sstrange.message.FeedbackMessageGenerator;
+import sstrange.support.stringmatching.GSTMatchTuple;
 import sstrange.token.FeedbackToken;
-import support.stringmatching.GSTMatchTuple;
 
 public class FastComparer {
 
 	public static ArrayList<ComparisonPairTuple> doSyntacticComparison(String assignmentPath, String progLang,
 			String humanLang, int simThreshold, int dissimThreshold, int minMatchingLength, int maxPairs,
-			String templateDirPath, String similarityMeasurement, File assignmentFile, String assignmentParentDirPath,
-			String assignmentName, boolean isMultipleFiles, boolean isCommonCodeAllowed, String aiSubPath,
+			String similarityMeasurement, File assignmentFile, String assignmentParentDirPath,
+			String assignmentName, boolean isMultipleFiles, String aiSubPath,
 			ArrayList<File> filesToBeDeleted, int numClusters, int numStages, boolean isSensitive) {
 
 		// add AI submission as one of the submissions if exist
@@ -51,17 +49,6 @@ public class FastComparer {
 			assignmentPath = newAssignmentPath;
 			// mark new assignment path to be deleted after the whole process
 			filesToBeDeleted.add(new File(newAssignmentPath));
-		}
-
-		if (progLang.equalsIgnoreCase("java") || progLang.equalsIgnoreCase("py")) {
-			/*
-			 * For now, these only work on Java and Python
-			 */
-
-			// remove common and template code for java and python if needed
-			assignmentPath = JavaPyCommonTemplateRemover.removeCommonAndTemplateCodeJavaPython(assignmentPath,
-					minMatchingLength, templateDirPath, isCommonCodeAllowed, progLang, assignmentParentDirPath,
-					assignmentName, filesToBeDeleted);
 		}
 
 		// set result dir based on the name of assignment
@@ -309,10 +296,10 @@ public class FastComparer {
 				if (assignments[j].getName().equals(aiSubName))
 					continue;
 
-				int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+				int overallDissim = 100 - (simPerSubmission[j] / (simPerSubmission.length - 1));
 				if (isSensitive) {
 					overallDissim = 100
-							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * (simPerSubmission.length - 1)));
 				}
 				if (overallDissim >= dissimThreshold) {
 					/*
@@ -339,6 +326,9 @@ public class FastComparer {
 			while (anomalies.size() > maxPairs) {
 				anomalies.remove(anomalies.size() - 1);
 			}
+
+			// NEEDED TO BE REMOVED AFTER EVALUATION
+			DissimilarityAIEval.result = anomalies;
 
 			// generate anomaly reports
 			for (int i = 0; i < anomalies.size(); i++) {
@@ -517,10 +507,10 @@ public class FastComparer {
 				if (assignments[j].getName().equals(aiSubName))
 					continue;
 
-				int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+				int overallDissim = 100 - (simPerSubmission[j] / (simPerSubmission.length - 1));
 				if (isSensitive)
 					overallDissim = 100
-							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * (simPerSubmission.length - 1)));
 				if (overallDissim >= dissimThreshold) {
 					/*
 					 * if there are anomaly tuples resulted from comparison with AI, just update the
@@ -546,6 +536,9 @@ public class FastComparer {
 			while (anomalies.size() > maxPairs) {
 				anomalies.remove(anomalies.size() - 1);
 			}
+
+			// NEEDED TO BE REMOVED AFTER EVALUATION
+			DissimilarityAIEval.result = anomalies;
 
 			// generate anomaly reports
 			for (int i = 0; i < anomalies.size(); i++) {
@@ -745,10 +738,10 @@ public class FastComparer {
 				if (assignments[j].getName().equals(aiSubName))
 					continue;
 
-				int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+				int overallDissim = 100 - (simPerSubmission[j] / (simPerSubmission.length - 1));
 				if (isSensitive)
 					overallDissim = 100
-							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+							- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * (simPerSubmission.length - 1)));
 				if (overallDissim >= dissimThreshold) {
 					/*
 					 * if there are anomaly tuples resulted from comparison with AI, just update the
@@ -774,6 +767,9 @@ public class FastComparer {
 			while (anomalies.size() > maxPairs) {
 				anomalies.remove(anomalies.size() - 1);
 			}
+
+			// NEEDED TO BE REMOVED AFTER EVALUATION
+			DissimilarityAIEval.result = anomalies;
 
 			// generate anomaly reports
 			for (int i = 0; i < anomalies.size(); i++) {
@@ -1040,10 +1036,10 @@ public class FastComparer {
 					if (assignments[j].getName().equals(aiSubName))
 						continue;
 
-					int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+					int overallDissim = 100 - (simPerSubmission[j] / (simPerSubmission.length - 1));
 					if (isSensitive)
-						overallDissim = 100
-								- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+						overallDissim = 100 - ((simPerSubmission[j] + surSimPerSubmission[j])
+								/ (2 * (simPerSubmission.length - 1)));
 					if (overallDissim >= dissimThreshold) {
 						/*
 						 * if there are anomaly tuples resulted from comparison with AI, just update the
@@ -1069,6 +1065,9 @@ public class FastComparer {
 				while (anomalies.size() > maxPairs) {
 					anomalies.remove(anomalies.size() - 1);
 				}
+
+				// NEEDED TO BE REMOVED AFTER EVALUATION
+				DissimilarityAIEval.result = anomalies;
 
 				// generate anomaly reports
 				for (int i = 0; i < anomalies.size(); i++) {
@@ -1335,10 +1334,10 @@ public class FastComparer {
 					if (assignments[j].getName().equals(aiSubName))
 						continue;
 
-					int overallDissim = 100 - (simPerSubmission[j] / simPerSubmission.length);
+					int overallDissim = 100 - (simPerSubmission[j] / (simPerSubmission.length - 1));
 					if (isSensitive)
-						overallDissim = 100
-								- ((simPerSubmission[j] + surSimPerSubmission[j]) / (2 * simPerSubmission.length));
+						overallDissim = 100 - ((simPerSubmission[j] + surSimPerSubmission[j])
+								/ (2 * (simPerSubmission.length - 1)));
 					if (overallDissim >= dissimThreshold) {
 						/*
 						 * if there are anomaly tuples resulted from comparison with AI, just update the
@@ -1363,6 +1362,9 @@ public class FastComparer {
 				while (anomalies.size() > maxPairs) {
 					anomalies.remove(anomalies.size() - 1);
 				}
+
+				// NEEDED TO BE REMOVED AFTER EVALUATION
+				DissimilarityAIEval.result = anomalies;
 
 				// generate anomaly reports
 				for (int i = 0; i < anomalies.size(); i++) {

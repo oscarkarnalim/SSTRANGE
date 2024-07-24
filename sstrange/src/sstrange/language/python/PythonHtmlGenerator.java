@@ -14,9 +14,8 @@ import sstrange.htmlgenerator.HtmlTableStringGenerator;
 import sstrange.message.FeedbackMessage;
 import sstrange.message.FeedbackMessageGenerator;
 import sstrange.message.SyntaxFeedbackMessage;
+import sstrange.support.stringmatching.GSTMatchTuple;
 import sstrange.token.FeedbackToken;
-import sstrange.token.FeedbackTokenComparator;
-import support.stringmatching.GSTMatchTuple;
 
 public class PythonHtmlGenerator {
 	/*

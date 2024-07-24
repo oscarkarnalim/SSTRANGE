@@ -2,8 +2,7 @@ package sstrange.matchgenerator;
 
 import java.util.ArrayList;
 
-import sstrange.token.FeedbackToken;
-import support.stringmatching.GSTMatchTuple;
+import sstrange.support.stringmatching.GSTMatchTuple;
 
 public class ComparisonPairTuple implements Comparable<ComparisonPairTuple> {
 	private int submissionID1, submissionID2;

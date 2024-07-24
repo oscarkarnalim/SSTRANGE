@@ -2,9 +2,9 @@ package sstrange.message;
 
 import java.util.ArrayList;
 
+import sstrange.support.stringmatching.GSTMatchTuple;
+import sstrange.support.stringmatching.GreedyStringTiling;
 import sstrange.token.FeedbackToken;
-import support.stringmatching.GSTMatchTuple;
-import support.stringmatching.GreedyStringTiling;
 
 public class FeedbackMessageGenerator {
 

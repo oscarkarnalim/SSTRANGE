@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import sstrange.matchgenerator.MatchGenerator;
+import sstrange.support.stringmatching.GSTMatchTuple;
 import sstrange.token.FeedbackToken;
-import support.stringmatching.GSTMatchTuple;
 
 public class SimWeighter {
 

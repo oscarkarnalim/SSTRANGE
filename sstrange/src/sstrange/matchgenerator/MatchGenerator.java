@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import support.stringmatching.GSTMatchTuple;
+import sstrange.support.stringmatching.GSTMatchTuple;
 
 public class MatchGenerator {
 	public static ArrayList<GSTMatchTuple> generateMatches(HashMap<String, ArrayList<Integer>> tokenIndex1,

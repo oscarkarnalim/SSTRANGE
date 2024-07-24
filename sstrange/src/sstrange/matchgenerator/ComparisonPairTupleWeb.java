@@ -2,7 +2,7 @@ package sstrange.matchgenerator;
 
 import java.util.ArrayList;
 
-import support.stringmatching.GSTMatchTuple;
+import sstrange.support.stringmatching.GSTMatchTuple;
 
 public class ComparisonPairTupleWeb extends ComparisonPairTuple {
 	private ArrayList<GSTMatchTuple> phpMatches, jsMatches, cssMatches;

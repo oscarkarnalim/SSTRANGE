@@ -6,10 +6,7 @@ import java.util.ArrayList;
 
 import sstrange.language.java.JavaFeedbackGenerator;
 import sstrange.language.python.PythonFeedbackGenerator;
-import sstrange.matchgenerator.MatchGenerator;
-import sstrange.message.FeedbackMessageGenerator;
 import sstrange.token.FeedbackToken;
-import support.stringmatching.GSTMatchTuple;
 
 public class STRANGEPairGenerator {
 	public static ArrayList<FeedbackToken> getTokenString(String filepath, String progLang) {
