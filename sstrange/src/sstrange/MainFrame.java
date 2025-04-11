@@ -63,14 +63,14 @@ public class MainFrame extends JFrame {
 		// if args has arguments, execute as a library
 		if (args.length > 0) {
 			// just for code tracing in estrange
-			String prefixPath = "mcu" + File.separator;
-			File file = new File(prefixPath + "err_sstrange.txt");
-			FileOutputStream fos = new FileOutputStream(file, true);
-			PrintStream ps = new PrintStream(fos);
-			System.setErr(ps);
+//			String prefixPath = "mcu" + File.separator;
+//			File file = new File(prefixPath + "err_sstrange.txt");
+//			FileOutputStream fos = new FileOutputStream(file, true);
+//			PrintStream ps = new PrintStream(fos);
+//			System.setErr(ps);
 
 			executeConsole(args);
-			ps.close();
+//			ps.close();
 		} else {
 			// if empty, show the UI
 			EventQueue.invokeLater(new Runnable() {
