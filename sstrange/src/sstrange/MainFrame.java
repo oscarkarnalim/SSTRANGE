@@ -264,7 +264,7 @@ public class MainFrame extends JFrame {
 		lblReportedSimilarities.setBounds(20, 420, 178, 30);
 		contentPane.add(lblReportedSimilarities);
 
-		lblReportedSimilarities = new JLabel("AI generated sample :");
+		lblReportedSimilarities = new JLabel("AI assisted sample :");
 		lblReportedSimilarities.setHorizontalAlignment(SwingConstants.LEFT);
 		lblReportedSimilarities.setFont(new Font("Times New Roman", Font.PLAIN, 16));
 		lblReportedSimilarities.setBounds(20, 370, 178, 30);
@@ -383,7 +383,7 @@ public class MainFrame extends JFrame {
 			// check whether the path is not valid
 			File f = new File(path);
 			if (f.exists() == false)
-				errorMessage += "The AI generated sample submission path does not exist\n";
+				errorMessage += "The AI assisted sample submission path does not exist\n";
 			else
 				aiSubPath = path;
 		}

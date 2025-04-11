@@ -43,7 +43,12 @@ public class AnomalyTuple implements Comparable<AnomalyTuple> {
 	@Override
 	public int compareTo(AnomalyTuple o) {
 		// sort based on avg sim in descending order
-		return (int) ((-getDissimResult() + o.getDissimResult()) * 100000);
+		// uniqueness
+		// return (int) ((-getDissimResult() + o.getDissimResult()) * 100000);
+		// template
+		// return (int) ((-getAiSim() + o.getAiSim()) * 100000);
+		// template + uniqueness
+		return (int) ((-(getDissimResult()+getAiSim())/2 + (o.getDissimResult()+o.getAiSim())/2) * 100000);
 	}
 
 	public double getDissimResult() {

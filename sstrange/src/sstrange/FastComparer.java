@@ -11,7 +11,7 @@ import info.debatty.java.lsh.LSHMinHash;
 import info.debatty.java.lsh.LSHSuperBit;
 import sstrange.anomaly.AICodeManipulator;
 import sstrange.anomaly.AnomalyTuple;
-import sstrange.evaluation.DissimilarityAIEval;
+import sstrange.evaluation.DissimilarityTemplateAIEval;
 import sstrange.htmlgenerator.CodeReader;
 import sstrange.htmlgenerator.HtmlGenerator;
 import sstrange.htmlgenerator.UniqueCodeHtmlGenerator;
@@ -326,9 +326,9 @@ public class FastComparer {
 			while (anomalies.size() > maxPairs) {
 				anomalies.remove(anomalies.size() - 1);
 			}
-
-			// NEEDED TO BE REMOVED AFTER EVALUATION
-			DissimilarityAIEval.result = anomalies;
+			
+			// should be deleted after evaluation
+			DissimilarityTemplateAIEval.result = anomalies;
 
 			// generate anomaly reports
 			for (int i = 0; i < anomalies.size(); i++) {
@@ -476,8 +476,11 @@ public class FastComparer {
 							 * anomaly is j.
 							 */
 							int anomalySubIdx = k;
-							if (dirname2.equals(aiSubName))
+							dirname1 = "AI sample";
+							if (dirname2.equals(aiSubName)) {
 								anomalySubIdx = j;
+								dirname2 = "AI sample";
+							}
 							anomalies.add(new AnomalyTuple(anomalySubIdx, assignments[anomalySubIdx].getName(), -1,
 									overallSimDegree));
 
@@ -536,9 +539,9 @@ public class FastComparer {
 			while (anomalies.size() > maxPairs) {
 				anomalies.remove(anomalies.size() - 1);
 			}
-
-			// NEEDED TO BE REMOVED AFTER EVALUATION
-			DissimilarityAIEval.result = anomalies;
+			
+			// should be deleted after evaluation
+			DissimilarityTemplateAIEval.result = anomalies;
 
 			// generate anomaly reports
 			for (int i = 0; i < anomalies.size(); i++) {
@@ -708,8 +711,12 @@ public class FastComparer {
 							 * anomaly is j.
 							 */
 							int anomalySubIdx = k;
-							if (dirname2.equals(aiSubName))
+							dirname1 = "AI sample";
+							if (dirname2.equals(aiSubName)) {
 								anomalySubIdx = j;
+								dirname2 = "AI sample";
+							}
+							
 							anomalies.add(new AnomalyTuple(anomalySubIdx, assignments[anomalySubIdx].getName(), -1,
 									overallSimDegree));
 							// add the comparison pair for AI
@@ -767,9 +774,9 @@ public class FastComparer {
 			while (anomalies.size() > maxPairs) {
 				anomalies.remove(anomalies.size() - 1);
 			}
-
-			// NEEDED TO BE REMOVED AFTER EVALUATION
-			DissimilarityAIEval.result = anomalies;
+			
+			// should be deleted after evaluation
+			DissimilarityTemplateAIEval.result = anomalies;
 
 			// generate anomaly reports
 			for (int i = 0; i < anomalies.size(); i++) {
@@ -1005,8 +1012,11 @@ public class FastComparer {
 							 * anomaly is j.
 							 */
 							int anomalySubIdx = submissionID2;
-							if (dirname2.equals(aiSubName))
+							dirname1 = "AI sample";
+							if (dirname2.equals(aiSubName)) {
 								anomalySubIdx = submissionID1;
+								dirname2 = "AI sample";
+							}
 							anomalies.add(new AnomalyTuple(anomalySubIdx, assignments[anomalySubIdx].getName(), -1,
 									overallSimDegree));
 
@@ -1065,9 +1075,9 @@ public class FastComparer {
 				while (anomalies.size() > maxPairs) {
 					anomalies.remove(anomalies.size() - 1);
 				}
-
-				// NEEDED TO BE REMOVED AFTER EVALUATION
-				DissimilarityAIEval.result = anomalies;
+				
+				// should be deleted after evaluation
+				DissimilarityTemplateAIEval.result = anomalies;
 
 				// generate anomaly reports
 				for (int i = 0; i < anomalies.size(); i++) {
@@ -1303,8 +1313,12 @@ public class FastComparer {
 							 * anomaly is j.
 							 */
 							int anomalySubIdx = submissionID2;
-							if (dirname2.equals(aiSubName))
+							dirname1 = "AI sample";
+							if (dirname2.equals(aiSubName)) {
 								anomalySubIdx = submissionID1;
+								dirname2 = "AI sample";
+							}
+							
 							anomalies.add(new AnomalyTuple(anomalySubIdx, assignments[anomalySubIdx].getName(), -1,
 									overallSimDegree));
 
@@ -1362,9 +1376,9 @@ public class FastComparer {
 				while (anomalies.size() > maxPairs) {
 					anomalies.remove(anomalies.size() - 1);
 				}
-
-				// NEEDED TO BE REMOVED AFTER EVALUATION
-				DissimilarityAIEval.result = anomalies;
+				
+				// should be deleted after evaluation
+				DissimilarityTemplateAIEval.result = anomalies;
 
 				// generate anomaly reports
 				for (int i = 0; i < anomalies.size(); i++) {

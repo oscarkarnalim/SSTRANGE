@@ -1,19 +1,20 @@
 package sstrange.language.python;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Stack;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.Lexer;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ParseTree;
 
-import sstrange.CodeMerger;
-import sstrange.support.stringmatching.AdditionalKeywordsManager;
-import sstrange.token.FeedbackToken;
 import sstrange.support.pythonantlr.Python3Lexer;
+import sstrange.support.pythonantlr.Python3Parser;
+import sstrange.token.FeedbackToken;
 
 public class PythonFeedbackGenerator {
 
